@@ -1,0 +1,37 @@
+name: Fetch and Save Paper Data
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # This runs the workflow daily at midnight
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  fetch-and-save:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install requests
+
+    - name: Fetch and save paper titles
+      run: |
+        python src/fetch_papers.py
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add paper_data.txt
+        git commit -m 'Update paper data'
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
