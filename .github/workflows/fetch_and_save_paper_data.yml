@@ -22,7 +22,7 @@ jobs:
       run: |
         python -m pip install requests
 
-    - name: Fetch and save paper titles
+    - name: Fetch and save paper metadata
       run: |
         python src/fetch_papers.py
 
@@ -30,8 +30,8 @@ jobs:
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
-        git add paper_data.txt
-        git commit -m 'Update paper data'
+        git add paper_metadata.txt
+        git commit -m 'Update paper metadata'
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
