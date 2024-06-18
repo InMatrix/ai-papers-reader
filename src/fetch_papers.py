@@ -25,7 +25,7 @@ def get_daily_papers_metadata():
 papers_metadata = get_daily_papers_metadata()
 
 # save the paper metadata to a file
-with open('paper_metadata.txt', 'w') as file:
+with open('../paper_metadata.txt', 'w') as file:
   for paper in papers_metadata:
     file.write(f"Title: {paper['title']}\n")
     file.write(f"PDF: https://arxiv.org/pdf/{paper['paper']['id']}\n")
