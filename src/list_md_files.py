@@ -10,7 +10,8 @@ for root, _, files in os.walk("reports"):
             post = frontmatter.load(file_path)
             markdown_files.append({
                 "title": post.get("title", file),
-                "url": file_path[8:],  # Remove the leading "reports/"
+                "url": file_path[8:-3],  
+                # Remove the leading "reports/" and the trailing ".md"
                 "date": post.get("date", "N/A")
             })
 
