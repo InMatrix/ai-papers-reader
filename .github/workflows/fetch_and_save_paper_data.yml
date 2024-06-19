@@ -26,11 +26,15 @@ jobs:
       run: |
         python src/fetch_papers.py
 
+    - name: Archive paper metadata
+      run: |
+        cp paper_data/paper_metadata.txt paper_data/paper_metadata_$(date +%Y%m%d).txt
+
     - name: Commit and push changes
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
-        git add paper_metadata.txt
+        git add paper_data/
         git commit -m 'Update paper metadata'
         git push
       env:
