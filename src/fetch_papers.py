@@ -29,6 +29,6 @@ with open('paper_data/paper_metadata.txt', 'w') as file:
   for paper in papers_metadata:
     file.write(f"Title: {paper['title']}\n")
     file.write(f"PDF: https://arxiv.org/pdf/{paper['paper']['id']}\n")
-    summary = paper['paper']['summary'].replace('\n', '')
+    summary = paper['paper']['summary'].replace('\n', ' ')
     file.write(f"Summary: {summary}\n")
     file.write("---\n")
