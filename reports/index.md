@@ -1,14 +1,11 @@
 ---
 layout: page
-title: Index of Markdown Files
+title: Recent Papers Reports
 ---
 
-# Index of Markdown Files
+# Recent Papers Reports
 
-<ul>
 {% for file in site.data.markdown_files %}
-  <li>
-    <a href="{{ file.url }}">{{ file.title }}</a>
-  </li>
+* [{{ file.title }}]({{ file.url }})
 {% endfor %}
-</ul>
+
