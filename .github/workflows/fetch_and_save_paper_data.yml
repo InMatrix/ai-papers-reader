@@ -28,7 +28,7 @@ jobs:
 
     - name: Archive paper metadata
       run: |
-        cp paper_data/paper_metadata.txt paper_data/paper_metadata_$(date +%Y%m%d).txt
+        cp paper_data/paper_metadata.txt paper_data/paper_metadata_$(date +%Y-%m-%d).txt
 
     - name: Commit and push changes
       run: |
@@ -68,7 +68,7 @@ jobs:
       
       - name: Archive report
         run: |
-          cp reports/report_latest.md reports/report_$(date +%Y%m%d).md
+          cp reports/report_latest.md reports/report_$(date +%Y-%m-%d).md
 
       - name: Commit and push changes
         run: |
