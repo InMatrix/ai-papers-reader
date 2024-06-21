@@ -61,3 +61,17 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           python src/generate_report.py
+      
+      - name: Archive report
+        run: |
+          cp reports/report_latest.md reports/report_$(date +%Y%m%d).md
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add reports/
+          git commit -m 'Update paper reports'
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

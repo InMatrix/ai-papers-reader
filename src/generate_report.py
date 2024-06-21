@@ -42,7 +42,5 @@ response = model.generate_content(prompt)
 # print(response.text)
 
 # Write response to a file
-date_suffix = datetime.date.today().strftime('%Y-%m-%d')
-
-with open(f'reports/report_{date_suffix}.md', 'w') as file:
+with open(f'reports/report_latest.md', 'w') as file:
     file.write(response.text)
