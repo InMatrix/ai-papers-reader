@@ -35,8 +35,12 @@ jobs:
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
         git add paper_data/
-        git commit -m 'Update paper metadata'
-        git push
+        if [ -n "$(git status --porcelain)" ]; then
+          git commit -m 'Update paper metadata'
+          git push
+        else
+          echo "No changes of paper metadata to commit"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -71,7 +75,11 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add reports/
-          git commit -m 'Update paper reports'
-          git push
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m 'Update paper reports'
+            git push
+          else
+            echo "No changes of paper reports to commit"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
