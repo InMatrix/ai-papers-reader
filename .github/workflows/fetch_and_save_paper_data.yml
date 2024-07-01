@@ -99,7 +99,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install -q -U yaml frontmatter
+          pip install -q -U pyyaml python-frontmatter
 
       - name: Update markdown_files.yml 
         run: |
