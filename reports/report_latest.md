@@ -1,51 +1,31 @@
-**How are users involved in the evaluation of AI systems?**
+## 2024-07-19
 
-- *Relevant Paper*: FIRE: A Dataset for Feedback Integration and Refinement Evaluation of Multimodal Models
-    - *Why it's relevant*: This paper focuses on how user feedback can be used to improve the performance of vision-language models (VLMs). The authors build a feedback-refinement dataset called FIRE, which includes 1.1M multi-turn conversations derived from 27 source datasets. FIRE empowers VLMs to refine their responses based on user feedback across diverse tasks, making user interaction with AI systems more efficient.
-    - *Read more*: https://arxiv.org/pdf/2407.11522
+## Generative AI applied to supporting software developers
+### Case2Code: Learning Inductive Reasoning with Synthetic Data
+💡 *Why it's relevant*: This paper focuses on teaching LLMs to conduct inductive reasoning, a skill crucial for software development tasks like code completion and bug fixing. It proposes a novel task called Case2Code, where LLMs are trained to infer underlying code implementations from synthetic input-output examples. This approach could lead to the development of AI tools that can better understand and generate code based on user input and existing code examples.
 
-**What are the novel prompt engineering techniques that improve the performance of AI systems?**
+👉 [ Read full paper](https://arxiv.org/pdf/2407.12504)
 
-- *Relevant Paper*: Qwen2 Technical Report
-    - *Why it's relevant*: This paper introduces Qwen2, a series of foundational and instruction-tuned language models, including a 72B parameter model that outperforms most previous open-weight models and exhibits competitive performance relative to proprietary models. The authors highlight that they have simplified the pre-training process for Qwen2-Audio, a multimodal model, by utilizing natural language prompts for different data and tasks, which significantly boosted its instruction-following capability.
-    - *Read more*: https://arxiv.org/pdf/2407.10671
+## Prompt engineering techniques that improve AI system performance
+### The Art of Saying No: Contextual Noncompliance in Language Models
+💡 *Why it's relevant*:  This paper tackles the issue of making AI systems more responsible and less likely to generate harmful or inappropriate outputs.  It proposes a taxonomy of contextual noncompliance, highlighting situations where AI models should "say no" to user requests, beyond just unsafe ones. The paper explores techniques to improve models' noncompliance capabilities, which has direct implications for ethical and safe development of AI systems for HCI applications.
 
-- *Relevant Paper*:  Make-An-Agent: A Generalizable Policy Network Generator with Behavior-Prompted Diffusion
-    - *Why it's relevant*: This paper introduces Make-An-Agent, a novel policy parameter generator that leverages conditional diffusion models for behavior-to-policy generation. This means that by providing a single demonstration of desired behaviors, the model can generate a control policy for an agent. This approach is highly efficient, as it only requires few-shot demonstrations as input.
-    - *Read more*: https://arxiv.org/pdf/2407.10973
+👉 [ Read full paper](https://arxiv.org/pdf/2407.12043)
 
-**How can the human-in-the-loop approach improve the model training process?**
+## Human-in-the-loop machine learning for improved training or evaluation
+### FIRE: A Dataset for Feedback Integration and Refinement Evaluation of Multimodal Models
+💡 *Why it's relevant*: This paper introduces FIRE, a feedback-refinement dataset, that allows researchers to evaluate how VLMs can adapt their responses based on user feedback. This dataset can be used to develop and assess human-in-the-loop approaches for improving the training and evaluation of VLMs, particularly in applications where user feedback is crucial.
 
-- *Relevant Paper*: Foundational Autoraters: Taming Large Language Models for Better Automatic Evaluation
-    - *Why it's relevant*: This paper introduces FLAMe, a family of Foundational Large Autorater Models, trained on a large collection of human judgments. This human-in-the-loop approach helps to improve the performance of LLM autoraters, which are used to evaluate the output of LLMs. FLAMe significantly outperforms models trained on proprietary data like GPT-4 and Claude-3 on many tasks.
-    - *Read more*: https://arxiv.org/pdf/2407.10817
+👉 [ Read full paper](https://arxiv.org/pdf/2407.11522)
 
-- *Relevant Paper*: Refuse Whenever You Feel Unsafe: Improving Safety in LLMs via Decoupled Refusal Training
-    - *Why it's relevant*: This paper proposes Decoupled Refusal Training (DeRTa), a novel approach to improve the safety of LLMs. DeRTa incorporates human feedback by training models to recognize and avoid unsafe content. This human-in-the-loop approach significantly enhances the models' ability to refuse generating unsafe content and surpasses well-known models such as GPT-4 in defending against attacks.
-    - *Read more*: https://arxiv.org/pdf/2407.09121
+## Applications of Generative AI in user interface design and engineering
+### IMAGDressing-v1: Customizable Virtual Dressing
+💡 *Why it's relevant*: This paper proposes IMAGDressing-v1, a virtual dressing system that allows users to control various aspects of generated images, including clothing, faces, poses, and scenes. This technology could revolutionize user interface design by enabling designers to quickly create and iterate on various UI concepts using text prompts and AI-generated visuals.
 
-**What are the latest applications of generative AI in user interface design and engineering?**
+👉 [ Read full paper](https://arxiv.org/pdf/2407.12705)
 
-- *Relevant Paper*: Click-Gaussian: Interactive Segmentation to Any 3D Gaussians
-    - *Why it's relevant*: This paper proposes Click-Gaussian, a method for interactive segmentation of 3D Gaussians. This technique could be used to improve the efficiency and accuracy of 3D scene manipulation in real-time applications. Click-Gaussian allows for fine-grained manipulation of 3D scenes, making it a valuable tool for user interface design and engineering.
-    - *Read more*: https://arxiv.org/pdf/2407.11793
+## Techniques to explain AI systems behavior to users
+### Uncertainty is Fragile: Manipulating Uncertainty in Large Language Models
+💡 *Why it's relevant*: This paper investigates the fragility of uncertainty estimation in LLMs, showcasing how attackers can manipulate the model's confidence without altering its output. This research sheds light on the challenges associated with explainable AI and emphasizes the need for robust techniques to ensure that users can trust and understand the reasoning behind AI system decisions.
 
-- *Relevant Paper*: Animate3D: Animating Any 3D Model with Multi-view Video Diffusion
-    - *Why it's relevant*: This paper introduces Animate3D, a framework for animating any static 3D model using multi-view video diffusion. Animate3D could be used to create interactive 3D experiences and simulations. Its ability to animate any 3D model opens up possibilities for user interface design, particularly in interactive 3D environments.
-    - *Read more*: https://arxiv.org/pdf/2407.11398
-
-- *Relevant Paper*: DreamCatalyst: Fast and High-Quality 3D Editing via Controlling Editability and Identity Preservation
-    - *Why it's relevant*: DreamCatalyst is a novel framework for fast and high-quality 3D editing. It utilizes score distillation sampling to achieve 3D consistency while reducing training time and improving editing quality. This technique could be applied in user interface design to enable intuitive and efficient 3D object manipulation. 
-    - *Read more*: https://arxiv.org/pdf/2407.11394
-
-**How to make it easier to explain AI system’s behavior?**
-
-- *Relevant Paper*: Model Surgery: Modulating LLM's Behavior Via Simple Parameter Editing
-    - *Why it's relevant*: This paper introduces a novel approach called "Model Surgery" to modulate the behavior of LLMs by editing a small subset of parameters. This technique allows for direct manipulation of specific behaviors like detoxification or resistance to jailbreaking. By understanding which parameters influence specific behaviors, it becomes easier to explain and control the AI system's actions.
-    - *Read more*: https://arxiv.org/pdf/2407.08770
-
-- *Relevant Paper*: Transformer Layers as Painters
-    - *Why it's relevant*: This paper explores the internal workings of transformers by analyzing the impact of removing or reorganizing information throughout the layers of a pretrained transformer. The authors demonstrate that different layers of transformers exhibit distinct functions, and some classes of problems are robust to skipping or reordering layers. This research provides insights into the internal mechanisms of transformers, making it easier to understand and explain their behavior.
-    - *Read more*: https://arxiv.org/pdf/2407.09298
-
-**no relevant paper was found for this question.**
+👉 [ Read full paper](https://arxiv.org/pdf/2407.11282)

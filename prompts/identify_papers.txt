@@ -63,5 +63,6 @@ Your response should include a number of entries formatted as follows. The text 
 
 ## {research topic}
 ### {paper title}
-- *Why it's relevant*: {briefly summarize the aspects of the paper relevant to the research question}
-- *Read more*: [{link to the paper's PDF file}]({link to the paper's PDF file})
+💡 *Why it's relevant*: {briefly summarize the aspects of the paper relevant to the research question}
+
+👉 [ Read full paper]({link to the paper's PDF file})
