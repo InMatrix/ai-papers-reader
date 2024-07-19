@@ -22,6 +22,11 @@ prompt = prompt_template.replace("{paper_data}", paper_data)
 response = model.generate_content(prompt)
 # print(response.text)
 
-# Write response to a file
+# Add the current date to the top of the file
+date = datetime.datetime.now().strftime("%Y-%m-%d")
+# Instead of trying to set response.text directly, create a new variable for the modified text
+modified_text = f"## {date}\n\n" + response.text
+
+# Write the modified text to a file
 with open(f'reports/report_latest.md', 'w') as file:
-    file.write(response.text)
+    file.write(modified_text)
