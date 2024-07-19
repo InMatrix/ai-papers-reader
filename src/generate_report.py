@@ -1,6 +1,7 @@
 import os
 import datetime
 import google.generativeai as genai
+import frontmatter
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -24,8 +25,17 @@ response = model.generate_content(prompt)
 
 # Add the current date to the top of the file
 date = datetime.datetime.now().strftime("%Y-%m-%d")
-# Instead of trying to set response.text directly, create a new variable for the modified text
+
 modified_text = f"## {date}\n\n" + response.text
+
+# Create a post with frontmatter
+post = frontmatter.loads(modified_text)
+post.metadata['layout'] = 'post'
+
+# Convert back to string with frontmatter
+modified_text = frontmatter.dumps(post)
+
+# set layout of the output to 'post'
 
 # Write the modified text to a file
 with open(f'reports/report_latest.md', 'w') as file:
