@@ -1,51 +1,53 @@
-**How are users involved in the evaluation of AI systems?**
+## 2024-07-19
 
-- *Relevant Paper*: FIRE: A Dataset for Feedback Integration and Refinement Evaluation of Multimodal Models
-    - *Why it's relevant*: This paper focuses on how user feedback can be used to improve the performance of vision-language models (VLMs). The authors build a feedback-refinement dataset called FIRE, which includes 1.1M multi-turn conversations derived from 27 source datasets. FIRE empowers VLMs to refine their responses based on user feedback across diverse tasks, making user interaction with AI systems more efficient.
-    - *Read more*: https://arxiv.org/pdf/2407.11522
+## Generative AI applied to supporting software developers
+### AUITestAgent: Automatic Requirements Oriented GUI Function Testing
+- *Why it's relevant*: This paper introduces AUITestAgent, a tool that automates GUI testing based on natural language requirements. This could be valuable for software developers as it simplifies the testing process and allows them to focus on other aspects of development. 
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.09018)
 
-**What are the novel prompt engineering techniques that improve the performance of AI systems?**
+## Prompt engineering techniques that improve AI system performance
+### Case2Code: Learning Inductive Reasoning with Synthetic Data
+- *Why it's relevant*: This paper explores the use of synthetic data to train LLMs for inductive reasoning. The technique is applicable to various tasks including code generation, potentially improving the performance of tools that use LLMs to assist developers.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.12504)
 
-- *Relevant Paper*: Qwen2 Technical Report
-    - *Why it's relevant*: This paper introduces Qwen2, a series of foundational and instruction-tuned language models, including a 72B parameter model that outperforms most previous open-weight models and exhibits competitive performance relative to proprietary models. The authors highlight that they have simplified the pre-training process for Qwen2-Audio, a multimodal model, by utilizing natural language prompts for different data and tasks, which significantly boosted its instruction-following capability.
-    - *Read more*: https://arxiv.org/pdf/2407.10671
+## Human-in-the-loop machine learning for improved training or evaluation
+### FIRE: A Dataset for Feedback Integration and Refinement Evaluation of Multimodal Models
+- *Why it's relevant*: This paper introduces a dataset for evaluating the feedback-refinement capabilities of VLMs. This is relevant to HCI as it explores the human-in-the-loop aspect of AI, particularly for improving AI systems through user feedback.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.11522)
+### DataDream: Few-shot Guided Dataset Generation
+- *Why it's relevant*: This paper proposes a framework for generating synthetic datasets guided by few-shot examples, which can potentially be used to improve the training of AI systems with less human effort. This has implications for HCI by exploring how to reduce the need for extensive human annotation in the AI training process. 
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.10910)
 
-- *Relevant Paper*:  Make-An-Agent: A Generalizable Policy Network Generator with Behavior-Prompted Diffusion
-    - *Why it's relevant*: This paper introduces Make-An-Agent, a novel policy parameter generator that leverages conditional diffusion models for behavior-to-policy generation. This means that by providing a single demonstration of desired behaviors, the model can generate a control policy for an agent. This approach is highly efficient, as it only requires few-shot demonstrations as input.
-    - *Read more*: https://arxiv.org/pdf/2407.10973
+## Applications of Generative AI in user interface design and engineering
+### IMAGDressing-v1: Customizable Virtual Dressing
+- *Why it's relevant*: This paper introduces a system that allows for customizable virtual dressing, potentially enabling designers to explore various UI concepts and iterations more efficiently. This is directly relevant to HCI as it examines the application of generative AI in the UI design process. 
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.12705)
+### Click-Gaussian: Interactive Segmentation to Any 3D Gaussians
+- *Why it's relevant*: This paper introduces a method for interactive segmentation of 3D Gaussians, allowing for more intuitive and efficient design of 3D objects and scenes. This is directly related to HCI as it addresses the interface between humans and 3D design tools. 
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.11793)
 
-**How can the human-in-the-loop approach improve the model training process?**
+## Techniques to explain AI systems behavior to users
+### Uncertainty is Fragile: Manipulating Uncertainty in Large Language Models
+- *Why it's relevant*: This paper explores the vulnerabilities of uncertainty estimation in LLMs. It is relevant to HCI as it investigates the transparency and explainability of AI systems, which are crucial for user trust and understanding. 
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.11282)
 
-- *Relevant Paper*: Foundational Autoraters: Taming Large Language Models for Better Automatic Evaluation
-    - *Why it's relevant*: This paper introduces FLAMe, a family of Foundational Large Autorater Models, trained on a large collection of human judgments. This human-in-the-loop approach helps to improve the performance of LLM autoraters, which are used to evaluate the output of LLMs. FLAMe significantly outperforms models trained on proprietary data like GPT-4 and Claude-3 on many tasks.
-    - *Read more*: https://arxiv.org/pdf/2407.10817
+## Additional papers with potential HCI implications
+### ThinkGrasp: A Vision-Language System for Strategic Part Grasping in Clutter
+- *Why it's relevant*: This paper explores the use of vision-language models for robotic grasping, potentially leading to more intuitive and natural human-robot interactions in cluttered environments. This is relevant to HCI as it examines the application of AI in real-world scenarios with human interaction.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.11298)
 
-- *Relevant Paper*: Refuse Whenever You Feel Unsafe: Improving Safety in LLMs via Decoupled Refusal Training
-    - *Why it's relevant*: This paper proposes Decoupled Refusal Training (DeRTa), a novel approach to improve the safety of LLMs. DeRTa incorporates human feedback by training models to recognize and avoid unsafe content. This human-in-the-loop approach significantly enhances the models' ability to refuse generating unsafe content and surpasses well-known models such as GPT-4 in defending against attacks.
-    - *Read more*: https://arxiv.org/pdf/2407.09121
+### VLMEvalKit: An Open-Source Toolkit for Evaluating Large Multi-Modality Models
+- *Why it's relevant*: This paper introduces an open-source toolkit for evaluating multi-modal AI models. This is relevant to HCI as it provides a standardized framework for measuring the performance of AI systems that interact with multiple modalities, including human input.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.11691)
 
-**What are the latest applications of generative AI in user interface design and engineering?**
+### Qwen2-Audio Technical Report
+- *Why it's relevant*: This paper describes Qwen2-Audio, a large-scale audio-language model capable of voice chat and audio analysis. This has implications for HCI as it explores the development of AI systems that can interact with humans in a more natural, audio-based manner.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.10759)
 
-- *Relevant Paper*: Click-Gaussian: Interactive Segmentation to Any 3D Gaussians
-    - *Why it's relevant*: This paper proposes Click-Gaussian, a method for interactive segmentation of 3D Gaussians. This technique could be used to improve the efficiency and accuracy of 3D scene manipulation in real-time applications. Click-Gaussian allows for fine-grained manipulation of 3D scenes, making it a valuable tool for user interface design and engineering.
-    - *Read more*: https://arxiv.org/pdf/2407.11793
+### GRUtopia: Dream General Robots in a City at Scale
+- *Why it's relevant*: This paper introduces a simulated 3D city environment designed for training embodied AI agents. This is relevant to HCI as it examines the development of AI systems that can interact with humans in real-world environments.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.10943)
 
-- *Relevant Paper*: Animate3D: Animating Any 3D Model with Multi-view Video Diffusion
-    - *Why it's relevant*: This paper introduces Animate3D, a framework for animating any static 3D model using multi-view video diffusion. Animate3D could be used to create interactive 3D experiences and simulations. Its ability to animate any 3D model opens up possibilities for user interface design, particularly in interactive 3D environments.
-    - *Read more*: https://arxiv.org/pdf/2407.11398
-
-- *Relevant Paper*: DreamCatalyst: Fast and High-Quality 3D Editing via Controlling Editability and Identity Preservation
-    - *Why it's relevant*: DreamCatalyst is a novel framework for fast and high-quality 3D editing. It utilizes score distillation sampling to achieve 3D consistency while reducing training time and improving editing quality. This technique could be applied in user interface design to enable intuitive and efficient 3D object manipulation. 
-    - *Read more*: https://arxiv.org/pdf/2407.11394
-
-**How to make it easier to explain AI system’s behavior?**
-
-- *Relevant Paper*: Model Surgery: Modulating LLM's Behavior Via Simple Parameter Editing
-    - *Why it's relevant*: This paper introduces a novel approach called "Model Surgery" to modulate the behavior of LLMs by editing a small subset of parameters. This technique allows for direct manipulation of specific behaviors like detoxification or resistance to jailbreaking. By understanding which parameters influence specific behaviors, it becomes easier to explain and control the AI system's actions.
-    - *Read more*: https://arxiv.org/pdf/2407.08770
-
-- *Relevant Paper*: Transformer Layers as Painters
-    - *Why it's relevant*: This paper explores the internal workings of transformers by analyzing the impact of removing or reorganizing information throughout the layers of a pretrained transformer. The authors demonstrate that different layers of transformers exhibit distinct functions, and some classes of problems are robust to skipping or reordering layers. This research provides insights into the internal mechanisms of transformers, making it easier to understand and explain their behavior.
-    - *Read more*: https://arxiv.org/pdf/2407.09298
-
-**no relevant paper was found for this question.**
+### Make-An-Agent: A Generalizable Policy Network Generator with Behavior-Prompted Diffusion
+- *Why it's relevant*: This paper introduces a method for generating control policies for agents using behavior demonstrations. This is relevant to HCI as it explores the development of AI systems that can learn and adapt to human preferences and behaviors.
+- *Read more*: [{link to the paper's PDF file}](https://arxiv.org/pdf/2407.10973) 
