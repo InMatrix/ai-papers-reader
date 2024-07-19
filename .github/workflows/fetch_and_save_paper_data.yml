@@ -2,7 +2,7 @@ name: Read Papers and Create a Report
 
 on:
   schedule:
-    - cron: '0 0 * * *' # This runs the workflow daily at midnight
+    - cron: '0 0 * * 5' # This runs the workflow weekly on Friday at midnight
   workflow_dispatch: # Allows manual trigger
 
 jobs:
