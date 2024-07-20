@@ -38,5 +38,5 @@ modified_text = frontmatter.dumps(post)
 # set layout of the output to 'post'
 
 # Write the modified text to a file
-with open(f'reports/report_latest.md', 'w') as file:
+with open(f'docs/report_latest.md', 'w') as file:
     file.write(modified_text)

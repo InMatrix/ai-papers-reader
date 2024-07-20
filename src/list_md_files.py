@@ -8,7 +8,7 @@ def formatTitle(file_path):
     return ' '.join(word.capitalize() for word in parts)    
 
 markdown_files = []
-for root, _, files in os.walk("reports"):
+for root, _, files in os.walk("docs"):
     for file in files:
         if file.endswith(".md") and not(file.startswith("index")):
             file_path = os.path.join(root, file)
@@ -20,5 +20,5 @@ for root, _, files in os.walk("reports"):
 
 markdown_files.sort(key=lambda x: x.get("title"), reverse=True)
 
-with open("_data/markdown_files.yml", "w") as outfile:
+with open("docs/_data/markdown_files.yml", "w") as outfile:
     yaml.dump(markdown_files, outfile, default_flow_style=False)
