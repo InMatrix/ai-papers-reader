@@ -1,7 +1,3 @@
----
-layout: post
----
-
 ## 2024-07-20
 
 ## Generative AI applied to supporting software developers
