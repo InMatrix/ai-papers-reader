@@ -68,14 +68,14 @@ jobs:
       
       - name: Archive report
         run: |
-          cp reports/report_latest.md reports/report_$(date +%Y-%m-%d).md
+          cp docs/report_latest.md docs/report_$(date +%Y-%m-%d).md
 
       - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git pull
-          git add reports/
+          git add docs/
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m 'Update paper reports'
             git push
