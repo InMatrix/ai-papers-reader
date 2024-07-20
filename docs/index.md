@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Recent Papers Reports
+title: Reports of Latest AI Papers 
 ---
 
 # Recent Papers Reports
