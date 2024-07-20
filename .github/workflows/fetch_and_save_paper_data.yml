@@ -58,7 +58,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -q -U google-generativeai
+          pip install -q -U google-generativeai python-frontmatter
 
       - name: Generate Report
         env:
