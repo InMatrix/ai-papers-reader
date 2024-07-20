@@ -110,7 +110,7 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git pull
-          git add _data/markdown_files.yml
+          git add docs/_data/markdown_files.yml
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m 'Update markdown_files.yml'
             git push
