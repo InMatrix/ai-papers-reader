@@ -13,7 +13,7 @@ for root, _, files in os.walk("docs"):
             file_path = os.path.join(root, file)
             markdown_files.append({
                 "title": formatTitle(file_path),
-                "url": file_path[5:-3].replace("_", "-") 
+                "url": file_path[5:-3]
             })
 
 markdown_files.sort(key=lambda x: x.get("title"), reverse=True)
