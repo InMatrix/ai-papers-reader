@@ -1,0 +1,5 @@
+# dependencies used in the project
+requests
+google-generativeai
+pyyaml
+python-frontmatter
