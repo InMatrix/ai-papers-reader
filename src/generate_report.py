@@ -1,42 +1,49 @@
 import os
-import datetime
+import argparse
 import google.generativeai as genai
-import frontmatter
-
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-genai.configure(api_key=GOOGLE_API_KEY)
 
 def read_file(filename):
     with open(filename, 'r') as file:
         return file.read()
 
-# Create the model
-# See https://ai.google.dev/api/python/google/generativeai/GenerativeModel
-model = genai.GenerativeModel('gemini-1.5-flash')
+def write_file(filename, content):
+    with open(filename, 'w') as file:
+        file.write(content)
 
-paper_data = read_file('paper_data/paper_metadata.txt')
+def generate_report(model, paper_data, prompt_template, date_string):
+    prompt = prompt_template.replace("{paper_data}", paper_data)
+    response = model.generate_content(prompt)
+    text_with_date = f"## {date_string}\n\n{response.text}"
+    return text_with_date
 
-prompt_template = read_file('prompts/identify_papers.txt')
+def extract_date_from_paper_data_path(paper_data_path):
+    return paper_data_path.split('_')[-1].split('.')[0]
 
-prompt = prompt_template.replace("{paper_data}", paper_data)
+def setup_argparse():
+    parser = argparse.ArgumentParser(description='Generate a paper report using Gemini')
+    parser.add_argument('--paper_data_path', default='paper_data/paper_metadata.txt', help='Path to paper data file')
+    parser.add_argument('--report_path', default='docs/report_latest.md', help='Path to output report file')
+    return parser.parse_args()
 
-response = model.generate_content(prompt)
-# print(response.text)
+def main():
+    args = setup_argparse()
+    prompt_template_path = 'prompts/identify_papers.txt'
+    
+    GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    if not GOOGLE_API_KEY:
+        raise ValueError("GOOGLE_API_KEY environment variable is not set")
+    
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    paper_data = read_file(args.paper_data_path)
+    date_string = extract_date_from_paper_data_path(args.paper_data_path)
+    prompt_template = read_file(prompt_template_path)
+    
+    report_content = generate_report(model, paper_data, prompt_template, date_string)
+    
+    write_file(args.report_path, report_content)
+    print(f"Report generated and saved to {args.report_path}")
 
-# Add the current date to the top of the file
-date = datetime.datetime.now().strftime("%Y-%m-%d")
-
-modified_text = f"## {date}\n\n" + response.text
-
-# Create a post with frontmatter
-post = frontmatter.loads(modified_text)
-post.metadata['layout'] = 'post'
-
-# Convert back to string with frontmatter
-modified_text = frontmatter.dumps(post)
-
-# set layout of the output to 'post'
-
-# Write the modified text to a file
-with open(f'docs/report_latest.md', 'w') as file:
-    file.write(modified_text)
+if __name__ == "__main__":
+    main()
