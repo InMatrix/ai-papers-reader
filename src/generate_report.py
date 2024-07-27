@@ -19,14 +19,27 @@ def generate_report(model, paper_data, prompt_template, date_string):
 def extract_date_from_paper_data_path(paper_data_path):
     return paper_data_path.split('_')[-1].split('.')[0]
 
+def get_most_recent_file(directory):
+    files = [os.path.join(directory, f) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    if not files:
+        raise FileNotFoundError(f"No files found in {directory}")
+    return max(files, key=os.path.getctime)
+
 def setup_argparse():
-    parser = argparse.ArgumentParser(description='Generate a paper report using Gemini')
-    parser.add_argument('--paper_data_path', default='paper_data/paper_metadata.txt', help='Path to paper data file')
+    parser = argparse.ArgumentParser(description='Generate paper report')
+    parser.add_argument('--paper_data_path', help='Path to paper data file')
     parser.add_argument('--report_path', default='docs/report_latest.md', help='Path to output report file')
-    return parser.parse_args()
+    return parser
 
 def main():
-    args = setup_argparse()
+    parser = setup_argparse()
+    args = parser.parse_args()
+
+    if args.paper_data_path is None:
+        paper_data_dir = 'paper_data'
+        args.paper_data_path = get_most_recent_file(paper_data_dir)
+        print(f"Using the most recent file: {args.paper_data_path}")
+    
     prompt_template_path = 'prompts/identify_papers.txt'
     
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
