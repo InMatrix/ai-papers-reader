@@ -28,7 +28,7 @@ def get_most_recent_file(directory):
 def setup_argparse():
     parser = argparse.ArgumentParser(description='Generate paper report')
     parser.add_argument('--paper_data_path', help='Path to paper data file')
-    parser.add_argument('--report_path', default='docs/report_latest.md', help='Path to output report file')
+    parser.add_argument('--report_path', help='Path to output report file')
     return parser
 
 def main():
@@ -39,6 +39,12 @@ def main():
         paper_data_dir = 'paper_data'
         args.paper_data_path = get_most_recent_file(paper_data_dir)
         print(f"Using the most recent file: {args.paper_data_path}")
+
+    date_string = extract_date_from_paper_data_path(args.paper_data_path)
+
+    if args.report_path is None:
+        report_dir = 'docs'
+        args.report_path = os.path.join(report_dir, f"report_{date_string}.md")
     
     prompt_template_path = 'prompts/identify_papers.txt'
     
@@ -50,11 +56,9 @@ def main():
     model = genai.GenerativeModel('gemini-1.5-flash')
     
     paper_data = read_file(args.paper_data_path)
-    date_string = extract_date_from_paper_data_path(args.paper_data_path)
     prompt_template = read_file(prompt_template_path)
-    
     report_content = generate_report(model, paper_data, prompt_template, date_string)
-    
+
     write_file(args.report_path, report_content)
     print(f"Report generated and saved to {args.report_path}")
 
