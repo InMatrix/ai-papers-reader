@@ -26,10 +26,6 @@ jobs:
       run: |
         python src/fetch_papers.py
 
-    - name: Archive paper metadata
-      run: |
-        cp paper_data/paper_metadata.txt paper_data/paper_metadata_$(date +%Y-%m-%d).txt
-
     - name: Commit and push changes
       run: |
         git config --global user.name 'github-actions'
@@ -68,10 +64,6 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           python src/generate_report.py
-      
-      - name: Archive report
-        run: |
-          cp docs/report_latest.md docs/report_$(date +%Y-%m-%d).md
 
       - name: Commit and push changes
         run: |

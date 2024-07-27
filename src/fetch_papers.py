@@ -1,4 +1,5 @@
 import requests
+import datetime
 
 # get papers metadata from endpoint
 def get_daily_papers_metadata():
@@ -24,8 +25,12 @@ def get_daily_papers_metadata():
 # save metadata to variable
 papers_metadata = get_daily_papers_metadata()
 
-# save the paper metadata to a file
-with open('paper_data/paper_metadata.txt', 'w') as file:
+# Get the current date
+current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
+# save the paper metadata to a file with the current date in the filename
+filename = f'paper_data/paper_metadata_{current_date}.txt'
+with open(filename, 'w') as file:
   for paper in papers_metadata:
     file.write(f"Title: {paper['title']}\n")
     file.write(f"PDF: https://arxiv.org/pdf/{paper['paper']['id']}\n")
