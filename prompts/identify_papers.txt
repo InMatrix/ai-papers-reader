@@ -58,11 +58,16 @@ Identify only the most relevant papers for each topic based on paper description
 {paper_data}
 </papers>
 
-Step 3: Generate a report summarizing the papers you recommend I read. Think about your answer first before you respond.
-Your response should include a number of entries formatted as follows. The text in curly braces are placeholders.
+Step 3: Generate a list of papers you recommend I read and organize them by research topic. Think about your answer first before you respond.
+Your response should include a number of entries formatted as a valid JSON file. Here's an example of an entry:
 
-## {research topic}
-### {paper title}
-💡 *Why it's relevant*: {briefly summarize the aspects of the paper relevant to the research question}
-
-👉 [ Read full paper]({link to the paper's PDF file})
+{
+  "topic": "Generative AI applied to supporting software developers",
+  "papers": [
+    {
+      "title":"OpenDevin: An Open Platform for AI Software Developers as Generalist Agents",
+      "relevance": "This paper presents OpenDevin, a platform for developing AI agents that can interact with the world like human software developers, writing code, browsing the web, and using command lines. This approach aligns with the use of Generative AI to support software developers, as it opens the possibility for AI to actively contribute to code development rather than just providing suggestions or assistance.",
+      "url":"https://arxiv.org/pdf/2407.16741"
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 import os
 import argparse
+import json
 import google.generativeai as genai
+import summarize_pdf
+from json_to_markdown import json_to_markdown 
 
 def read_file(filename):
     with open(filename, 'r') as file:
@@ -10,11 +13,40 @@ def write_file(filename, content):
     with open(filename, 'w') as file:
         file.write(content)
 
+
+def clean_model_response(response):
+    """
+    Clean up the response from the AI model 
+    by removing the first and last lines.
+    """
+    # Split the string by newlines
+    lines = response.text.splitlines()
+    # Remove the first and last lines
+    lines = lines[1:-1]
+    # Join the remaining lines back into a string
+    modified_response = "\n".join(lines)
+    # Parse the modified response as JSON
+    return json.loads(modified_response)
+
+def add_summary_to_response(response_json):
+    """
+    Iterate over the response json and add a summary 
+    for each paper based on its URL
+    """
+    for topic in response_json:
+        for paper in topic['papers']:
+            paper['summary'] = summarize_pdf.main(paper['url'])
+    return response_json
+
 def generate_report(model, paper_data, prompt_template, date_string):
     prompt = prompt_template.replace("{paper_data}", paper_data)
     response = model.generate_content(prompt)
-    text_with_date = f"## {date_string}\n\n{response.text}"
-    return text_with_date
+    response_json = clean_model_response(response)
+    modified_response_json =add_summary_to_response(response_json)
+    markdown_content = json_to_markdown(modified_response_json)
+    return markdown_content
+    # text_with_date = f"## {date_string}\n\n{response.text}"
+    # return text_with_date
 
 def extract_date_from_paper_data_path(paper_data_path):
     return paper_data_path.split('_')[-1].split('.')[0]

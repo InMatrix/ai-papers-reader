@@ -53,6 +53,19 @@ def download_pdf(url):
     response = requests.get(url)
     return response.content
 
+def get_summary_path(pdf_url):
+    """
+    Get the path to the summary file for a given PDF URL.
+
+    Args:
+    pdf_url (str): The URL of the PDF file.
+
+    Returns:
+    str: The path to the summary file.
+    """
+    paper_id = pdf_url.split('/')[-1]
+    return f"docs/summaries/{paper_id}.md"
+
 def summarize_pdf(pdf_content):
     """
     Summarize the content of a PDF using the Gemini 1.5 Flash model.
@@ -79,6 +92,17 @@ def summarize_pdf(pdf_content):
     
     return response.text
 
+def save_summary(summary, output_file):
+    """
+    Save the summary to a file.
+
+    Args:
+    summary (str): The summary to save.
+    output_file (str): The path to the output file.
+    """
+    with open(output_file, 'w') as f:
+        f.write(summary)
+
 def main(pdf_url):
     """
     Main function to orchestrate the PDF download and summarization process.
@@ -86,14 +110,25 @@ def main(pdf_url):
     Args:
     pdf_url (str): The URL of the PDF to summarize.
     """
-    print(f"Downloading PDF from {pdf_url}...")
+    summary_path = get_summary_path(pdf_url)
+    if os.path.exists(summary_path):
+        print(f"Summary for {pdf_url} already exists at {summary_path}")
+        return summary_path
+    
+    print(f">>> Downloading PDF from {pdf_url}...")
     pdf_content = download_pdf(pdf_url)
     
-    print("Generating summary...")
+    print(">>> Generating summary...")
     summary = summarize_pdf(pdf_content)
     
-    print("\nSummary:")
+    print("\n>>> Summary:")
     print(summary)
+
+    paper_id = pdf_url.split('/')[-1]  
+    summary_file_path = f"docs/summaries/{paper_id}.md" 
+    print(f"\n>>> Saving summary to {summary_file_path}")
+    save_summary(summary, summary_file_path)
+    return summary_file_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 1.5 Flash.")

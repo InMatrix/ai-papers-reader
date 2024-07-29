@@ -1,0 +1,99 @@
+[
+    {
+        "topic": "Generative AI applied to supporting software developers",
+        "papers": [
+            {
+                "title": "OpenDevin: An Open Platform for AI Software Developers as Generalist Agents",
+                "relevance": "This paper presents OpenDevin, a platform for developing AI agents that can interact with the world like human software developers, writing code, browsing the web, and using command lines. This approach aligns with the use of Generative AI to support software developers, as it opens the possibility for AI to actively contribute to code development rather than just providing suggestions or assistance.",
+                "url": "https://arxiv.org/pdf/2407.16741",
+                "summary": "docs/summaries/2407.16741.md"
+            }
+        ]
+    },
+    {
+        "topic": "Prompt engineering techniques that improve AI system performance",
+        "papers": [
+            {
+                "title": "PrimeGuard: Safe and Helpful LLMs through Tuning-Free Routing",
+                "relevance": "This paper proposes PrimeGuard, an inference-time guardrail method that utilizes structured control flow to route requests to different self-instantiations of the LM with varying instructions. This dynamic compilation of guidelines based on user queries can be viewed as a sophisticated form of prompt engineering that aims to improve both safety and helpfulness in LLMs.",
+                "url": "https://arxiv.org/pdf/2407.16318",
+                "summary": "docs/summaries/2407.16318.md"
+            },
+            {
+                "title": "PERSONA: A Reproducible Testbed for Pluralistic Alignment",
+                "relevance": "This paper introduces PERSONA, a testbed designed to evaluate and improve the pluralistic alignment of LLMs by procedurally generating diverse user profiles and generating a large-scale evaluation dataset with feedback pairs. This approach utilizes prompt engineering to understand how LLMs can effectively role-play different user personas, contributing to the development of more inclusive and diverse AI systems.",
+                "url": "https://arxiv.org/pdf/2407.17387",
+                "summary": "docs/summaries/2407.17387.md"
+            },
+            {
+                "title": "ViPer: Visual Personalization of Generative Models via Individual Preference Learning",
+                "relevance": "This paper proposes a method for personalizing image generation by first capturing a user's visual preferences through a one-time process of commenting on a small selection of images. This method uses prompt engineering to infer the user's liked and disliked visual attributes and guide the text-to-image model to generate personalized results.",
+                "url": "https://arxiv.org/pdf/2407.17365",
+                "summary": "docs/summaries/2407.17365.md"
+            }
+        ]
+    },
+    {
+        "topic": "Human-in-the-loop machine learning for improved training or evaluation",
+        "papers": [
+            {
+                "title": "BOND: Aligning LLMs with Best-of-N Distillation",
+                "relevance": "This paper proposes Best-of-N Distillation (BOND), an RLHF algorithm that seeks to emulate the benefits of Best-of-N sampling without the computational overhead at inference time. This approach leverages human feedback by focusing on aligning the distribution of generations from the policy to match the Best-of-N distribution, effectively incorporating human preferences into the training process.",
+                "url": "https://arxiv.org/pdf/2407.14622",
+                "summary": "docs/summaries/2407.14622.md"
+            },
+            {
+                "title": "AssistantBench: Can Web Agents Solve Realistic and Time-Consuming Tasks?",
+                "relevance": "This paper introduces AssistantBench, a challenging benchmark for evaluating web agents. The benchmark includes 214 realistic tasks that can be automatically evaluated, showcasing the potential for human-in-the-loop evaluation of web agents in complex and time-consuming tasks.",
+                "url": "https://arxiv.org/pdf/2407.15711",
+                "summary": "docs/summaries/2407.15711.md"
+            },
+            {
+                "title": "CoD, Towards an Interpretable Medical Agent using Chain of Diagnosis",
+                "relevance": "This paper introduces Chain-of-Diagnosis (CoD), a method for enhancing the interpretability of LLM-based medical diagnostics. CoD transforms the diagnostic process into a diagnostic chain, mirroring a physician's thought process and providing a transparent reasoning pathway. This approach emphasizes human-in-the-loop aspects by making model diagnostics controllable and aiding in identifying critical symptoms for inquiry through the entropy reduction of confidences.",
+                "url": "https://arxiv.org/pdf/2407.13301",
+                "summary": "docs/summaries/2407.13301.md"
+            }
+        ]
+    },
+    {
+        "topic": "Applications of Generative AI in user interface design and engineering",
+        "papers": [
+            {
+                "title": "CGB-DM: Content and Graphic Balance Layout Generation with Transformer-based Diffusion Model",
+                "relevance": "This paper proposes Content and Graphic Balance Layout Generation with Transformer-based Diffusion Model (CGB-DM), a method for generating precise and visually appealing layouts. The method focuses on balancing the predicted content and graphic weight, ensuring harmonious expression of content delivery and addressing challenges in generating layouts with blocking, overlap, or spatial misalignment.",
+                "url": "https://arxiv.org/pdf/2407.15233",
+                "summary": "docs/summaries/2407.15233.md"
+            },
+            {
+                "title": "AMEX: Android Multi-annotation Expo Dataset for Mobile GUI Agents",
+                "relevance": "This paper introduces AMEX, a comprehensive dataset designed for generalist mobile GUI-control agents. AMEX includes multiple levels of annotations for GUI interactive element grounding, functionality descriptions, and complex natural language instructions. The dataset can be used to train and evaluate AI agents that can interact with mobile device GUIs, potentially contributing to the development of more intuitive and user-friendly interfaces.",
+                "url": "https://arxiv.org/pdf/2407.17490",
+                "summary": "docs/summaries/2407.17490.md"
+            },
+            {
+                "title": "OutfitAnyone: Ultra-high Quality Virtual Try-On for Any Clothing and Any Person",
+                "relevance": "This paper proposes OutfitAnyone, a method for generating high-fidelity virtual try-on results. The method uses a two-stream conditional diffusion model to handle garment deformation for more lifelike results, potentially improving the user experience in online fashion retail and virtual fitting rooms.",
+                "url": "https://arxiv.org/pdf/2407.16224",
+                "summary": "docs/summaries/2407.16224.md"
+            },
+            {
+                "title": "Artist: Aesthetically Controllable Text-Driven Stylization without Training",
+                "relevance": "This paper presents Artist, a training-free approach for aesthetically controlling content and style generation in diffusion models for text-driven stylization. The method aims to achieve harmonious stylization results that preserve intricate content details and align with style prompts, potentially leading to more intuitive and user-friendly design tools for creative professionals.",
+                "url": "https://arxiv.org/pdf/2407.15842",
+                "summary": "docs/summaries/2407.15842.md"
+            }
+        ]
+    },
+    {
+        "topic": "Techniques to explain AI systems behavior to users",
+        "papers": [
+            {
+                "title": "CoD, Towards an Interpretable Medical Agent using Chain of Diagnosis",
+                "relevance": "This paper focuses on enhancing the interpretability of LLM-based medical diagnostics by introducing Chain-of-Diagnosis (CoD), a method that transforms the diagnostic process into a transparent reasoning pathway. CoD aims to provide users with a better understanding of the AI's decision-making process, particularly in sensitive domains like healthcare.",
+                "url": "https://arxiv.org/pdf/2407.13301",
+                "summary": "docs/summaries/2407.13301.md"
+            }
+        ]
+    }
+]
