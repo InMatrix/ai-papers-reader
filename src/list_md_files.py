@@ -20,3 +20,5 @@ markdown_files.sort(key=lambda x: x.get("title"), reverse=True)
 
 with open("docs/_data/markdown_files.yml", "w") as outfile:
     yaml.dump(markdown_files, outfile, default_flow_style=False)
+
+print("Markdown files list updated")
