@@ -35,7 +35,9 @@ def add_summary_to_response(response_json):
     """
     for topic in response_json:
         for paper in topic['papers']:
-            paper['summary'] = summarize_pdf.main(paper['url'])
+            summary_path = summarize_pdf.main(paper['url'])
+            # Use relative path to the summary file
+            paper['summary'] = summary_path.replace('docs/', '')
     return response_json
 
 def generate_report(model, paper_data, prompt_template, date_string):
