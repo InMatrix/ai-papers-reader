@@ -2,8 +2,8 @@ import json
 import argparse
 from typing import Dict, List, Any
 
-def json_to_markdown(data: List[Dict[str, Any]]) -> str:
-    markdown = "# Research Topics and Papers\n\n"
+def json_to_markdown(data: List[Dict[str, Any]], date: str) -> str:
+    markdown = f"# {date}\n\n"
     
     for item in data:
         topic = item['topic']
@@ -15,17 +15,19 @@ def json_to_markdown(data: List[Dict[str, Any]]) -> str:
             url = paper['url']
             summary = paper['summary']
             
-            markdown += f"### [{title}]({url})\n\n"
+            markdown += f"### {title}\n\n"
             markdown += f"**Relevance:** {relevance}\n\n"
-            markdown += f"**Summary:** [Link to summary]({summary})\n\n"
+            markdown += f"🌼 **[Summary]({summary})** | **[Full paper]({url})**\n\n"
     
     return markdown
 
 def convert_file(input_file: str, output_file: str) -> None:
+    date: str = input_file.split('_')[-1].split('.')[0]
+
     with open(input_file, 'r') as f:
         data = json.load(f)
     
-    markdown = json_to_markdown(data)
+    markdown = json_to_markdown(data, date)
     
     with open(output_file, 'w') as f:
         f.write(markdown)
