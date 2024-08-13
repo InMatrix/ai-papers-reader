@@ -84,7 +84,8 @@ def summarize_pdf(pdf_content):
         uploaded_file = genai.upload_file(path=temp_pdf.name, display_name="paper.pdf")
         
     # Generate content using the uploaded file
-    prompt = "Write a 500-word blog post summarizing the paper in the attached PDF file."
+    with open('prompts/summarize_paper.txt', 'r') as file:
+        prompt = file.read().strip()
     response = model.generate_content([prompt, uploaded_file])
     
     # Clean up the temporary file
@@ -124,11 +125,9 @@ def main(pdf_url):
     print("\n>>> Summary:")
     print(summary)
 
-    paper_id = pdf_url.split('/')[-1]  
-    summary_file_path = f"docs/summaries/{paper_id}.md" 
-    print(f"\n>>> Saving summary to {summary_file_path}")
-    save_summary(summary, summary_file_path)
-    return summary_file_path
+    print(f"\n>>> Saving summary to {summary_path}")
+    save_summary(summary, summary_path)
+    return summary_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 1.5 Flash.")
