@@ -8,13 +8,20 @@ def formatTitle(file_path):
 
 markdown_files = []
 for root, _, files in os.walk("docs"):
+    if "_site" in root:
+        continue
+    if root == "docs":
+        # skip docs/index.md
+        continue
     for file in files:
-        if file.endswith(".md") and not(file.startswith("index")):
+        if file.endswith(".md") and file.startswith("index"):
             file_path = os.path.join(root, file)
+            report_date = root[5:]
             markdown_files.append({
-                "title": formatTitle(file_path),
-                "url": file_path[5:-3]
+                "title": report_date,
+                "url": report_date
             })
+
 
 markdown_files.sort(key=lambda x: x.get("title"), reverse=True)
 

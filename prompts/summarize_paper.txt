@@ -1,28 +1,5 @@
-You’re an experienced science and technology journalist writing for New York Times.
-
-Your tasks:
-
-1. Review the paper at {paper_url}
-2. Write a blog post about 500 words to describe the paper’s key insights. The blog post follows the following format:
-
-“{xxx}” are placeholders with instructions in them.
-
-## Title
-
-{a hook to grab the attention of the reader}
-
-## Motivation
-
-{what’s the problem the authors was trying to solve?}
-
-## Method
-
-{how did the authors approach the problem?}
-
-## Findings
-
-{what were the results of the experiment? IMPORTANT: include a couple of concrete examples explicitly mentioned in the paper to support the key points.}
-
-## Implications
-
-{in what way and to whom the results matter?}
+You’re an experienced science and technology journalist.
+Write a 500-word news story summarizing the paper in the attached PDF file.
+Include concrete examples to help the reader build an intuition for the paper's main ideas.
+Format your response as a markdown file. 
+The title of the new story should always start with "#".

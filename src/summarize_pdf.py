@@ -53,6 +53,26 @@ def download_pdf(url):
     response = requests.get(url)
     return response.content
 
+def get_summary_path(pdf_url, save_location="docs/summaries"):
+    """
+    Get the path to the summary file for a given PDF URL.
+
+    Args:
+    pdf_url (str): The URL of the PDF file.
+    save_location (str): Optional. The directory to save the summary file. Default is "docs/summaries".
+
+    Returns:
+    str: The path to the summary file.
+    """
+    # Create the folder of `save_location` if it doesn't exist
+    os.makedirs(save_location, exist_ok=True)
+    
+    # Extract the paper ID from the URL
+    paper_id = pdf_url.split('/')[-1]
+    
+    # Return the path to the summary file
+    return f"{save_location}/{paper_id}.md"
+
 def summarize_pdf(pdf_content):
     """
     Summarize the content of a PDF using the Gemini 1.5 Flash model.
@@ -71,7 +91,8 @@ def summarize_pdf(pdf_content):
         uploaded_file = genai.upload_file(path=temp_pdf.name, display_name="paper.pdf")
         
     # Generate content using the uploaded file
-    prompt = "Write a 500-word blog post summarizing the paper in the attached PDF file."
+    with open('prompts/summarize_paper.txt', 'r') as file:
+        prompt = file.read().strip()
     response = model.generate_content([prompt, uploaded_file])
     
     # Clean up the temporary file
@@ -79,25 +100,70 @@ def summarize_pdf(pdf_content):
     
     return response.text
 
-def main(pdf_url):
+def add_front_matter(summary, summary_path):
+        """
+        Adds front matter to the summary.
+
+        Args:
+        summary (str): The summary to which front matter will be added.
+        summary_path (str): The path of the summary file, used to generate the permalink.
+
+        Returns:
+        str: The summary with added front matter.
+        """
+        # Extract the title from the first line of the summary
+        title_line = summary.split('\n', 1)[0]
+        # Remove all the leading or trailing '#', '*' and whitespace
+        title = title_line.strip('#* ')
+        
+        # Generate the permalink based on the summary file's path
+        permalink = summary_path.replace(".md", ".html").replace("docs/","")
+        
+        front_matter = f"---\nlayout: default\ntitle: \'{title}\'\npermalink: {permalink}\n---\n"
+        return front_matter + summary
+
+def save_summary(summary, output_file):
+    """
+    Save the summary to a file.
+
+    Args:
+    summary (str): The summary to save.
+    output_file (str): The path to the output file.
+    """
+    with open(output_file, 'w') as f:
+        f.write(summary)
+
+def main(pdf_url, save_location="docs/summaries"):
     """
     Main function to orchestrate the PDF download and summarization process.
 
     Args:
     pdf_url (str): The URL of the PDF to summarize.
+    save_location (str): Optional. The directory to save the summary file. Default is "docs/summaries".
     """
-    print(f"Downloading PDF from {pdf_url}...")
+    summary_path = get_summary_path(pdf_url, save_location)
+    if os.path.exists(summary_path):
+        print(f"Summary for {pdf_url} already exists at {summary_path}")
+        return summary_path
+    
+    print(f">>> Downloading PDF from {pdf_url}...")
     pdf_content = download_pdf(pdf_url)
     
-    print("Generating summary...")
+    print(">>> Generating summary...")
     summary = summarize_pdf(pdf_content)
-    
-    print("\nSummary:")
-    print(summary)
+
+    # Add front matter to the summary
+    print(">>> Adding front matter...")
+    summary_with_front_matter = add_front_matter(summary, summary_path)
+
+    print(f">>> Saving summary to {summary_path}\n")
+    save_summary(summary_with_front_matter, summary_path)
+    return summary_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 1.5 Flash.")
     parser.add_argument("url", help="The URL of the PDF to summarize")
+    parser.add_argument("--save_location", default="docs/summaries", help="Directory to save the summary file. Default is 'docs/summaries'.")
     args = parser.parse_args()
 
-    main(args.url)
+    main(args.url, args.save_location)
