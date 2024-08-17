@@ -8,6 +8,8 @@ def json_to_markdown(data: List[Dict[str, Any]], date: str) -> str:
     for item in data:
         topic = item['topic']
         markdown += f"## {topic}\n\n"
+        if not item['papers']:
+            markdown += "No paper recommendations for this topic.\n\n"
         
         for paper in item['papers']:
             title = paper['title']
@@ -17,7 +19,7 @@ def json_to_markdown(data: List[Dict[str, Any]], date: str) -> str:
             
             markdown += f"### {title}\n\n"
             markdown += f"**Relevance:** {relevance}\n\n"
-            markdown += f"🌼 **[Summary]({summary})** | **[Full paper]({url})**\n\n"
+            markdown += f"💡 **[Summary]({summary})** 📄 **[Full paper]({url})**\n\n"
     
     return markdown
 

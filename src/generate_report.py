@@ -37,7 +37,7 @@ def add_summary_to_response(response_json, save_location):
         for paper in topic['papers']:
             summary_path = summarize_pdf.main(paper['url'],save_location=save_location)
             # Use relative path to the summary file
-            paper['summary'] = summary_path.replace(f'{save_location}/', '')
+            paper['summary'] = summary_path.replace(f'{save_location}/', '').replace('.md', '.html')
     return response_json
 
 def generate_report(model, paper_data, prompt_template, date_string):
@@ -47,9 +47,9 @@ def generate_report(model, paper_data, prompt_template, date_string):
     summary_save_location = os.path.join('docs', date_string)
     modified_response_json =add_summary_to_response(response_json, save_location=summary_save_location)
     markdown_content = json_to_markdown(modified_response_json, date_string)
+    # add front matter to the markdown content
+    markdown_content = f"---\nlayout: default\ntitle: {date_string}\npermalink: /{date_string}/\n---\n\n{markdown_content}"
     return markdown_content
-    # text_with_date = f"## {date_string}\n\n{response.text}"
-    # return text_with_date
 
 def extract_date_from_paper_data_path(paper_data_path):
     return paper_data_path.split('_')[-1].split('.')[0]
