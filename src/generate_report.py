@@ -89,7 +89,7 @@ def main():
         os.makedirs(report_dir, exist_ok=True)  # Create the folder if it doesn't exist
         args.report_path = os.path.join(report_dir, 'index.md')
     
-    prompt_template_path = 'prompts/identify_papers.txt'
+    prompt_template_path = 'prompts/recommend_papers.txt'
     
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
     if not GOOGLE_API_KEY:
