@@ -1,2 +1,2 @@
-You’re an experienced science and technology journalist writing for New York Times.
+You’re an experienced science and technology journalist.
 Write a 500-word news story summarizing the paper in the attached PDF file.
