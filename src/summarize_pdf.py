@@ -113,12 +113,13 @@ def add_front_matter(summary, summary_path):
         """
         # Extract the title from the first line of the summary
         title_line = summary.split('\n', 1)[0]
-        title = title_line.lstrip('# ').strip()
+        # Remove all the leading or trailing '#', '*' and whitespace
+        title = title_line.strip('#* ')
         
         # Generate the permalink based on the summary file's path
         permalink = summary_path.replace(".md", ".html").replace("docs/","")
         
-        front_matter = f'---\nlayout: default\ntitle: \"{title}\"\npermalink: {permalink}\n---\n'
+        front_matter = f"---\nlayout: default\ntitle: \'{title}\'\npermalink: {permalink}\n---\n"
         return front_matter + summary
 
 def save_summary(summary, output_file):
@@ -155,7 +156,7 @@ def main(pdf_url, save_location="docs/summaries"):
     print(">>> Adding front matter...")
     summary_with_front_matter = add_front_matter(summary, summary_path)
 
-    print(f"\n>>> Saving summary to {summary_path}")
+    print(f">>> Saving summary to {summary_path}\n")
     save_summary(summary_with_front_matter, summary_path)
     return summary_path
 
