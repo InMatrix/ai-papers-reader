@@ -53,18 +53,25 @@ def download_pdf(url):
     response = requests.get(url)
     return response.content
 
-def get_summary_path(pdf_url):
+def get_summary_path(pdf_url, save_location="docs/summaries"):
     """
     Get the path to the summary file for a given PDF URL.
 
     Args:
     pdf_url (str): The URL of the PDF file.
+    save_location (str): Optional. The directory to save the summary file. Default is "docs/summaries".
 
     Returns:
     str: The path to the summary file.
     """
+    # Create the folder of `save_location` if it doesn't exist
+    os.makedirs(save_location, exist_ok=True)
+    
+    # Extract the paper ID from the URL
     paper_id = pdf_url.split('/')[-1]
-    return f"docs/summaries/{paper_id}.md"
+    
+    # Return the path to the summary file
+    return f"{save_location}/{paper_id}.md"
 
 def summarize_pdf(pdf_content):
     """
@@ -104,14 +111,15 @@ def save_summary(summary, output_file):
     with open(output_file, 'w') as f:
         f.write(summary)
 
-def main(pdf_url):
+def main(pdf_url, save_location="docs/summaries"):
     """
     Main function to orchestrate the PDF download and summarization process.
 
     Args:
     pdf_url (str): The URL of the PDF to summarize.
+    save_location (str): Optional. The directory to save the summary file. Default is "docs/summaries".
     """
-    summary_path = get_summary_path(pdf_url)
+    summary_path = get_summary_path(pdf_url, save_location)
     if os.path.exists(summary_path):
         print(f"Summary for {pdf_url} already exists at {summary_path}")
         return summary_path
@@ -132,6 +140,7 @@ def main(pdf_url):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 1.5 Flash.")
     parser.add_argument("url", help="The URL of the PDF to summarize")
+    parser.add_argument("--save_location", default="docs/summaries", help="Directory to save the summary file. Default is 'docs/summaries'.")
     args = parser.parse_args()
 
-    main(args.url)
+    main(args.url, args.save_location)

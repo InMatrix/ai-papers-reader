@@ -28,24 +28,25 @@ def clean_model_response(response):
     # Parse the modified response as JSON
     return json.loads(modified_response)
 
-def add_summary_to_response(response_json):
+def add_summary_to_response(response_json, save_location):
     """
     Iterate over the response json and add a summary 
     for each paper based on its URL
     """
     for topic in response_json:
         for paper in topic['papers']:
-            summary_path = summarize_pdf.main(paper['url'])
+            summary_path = summarize_pdf.main(paper['url'],save_location=save_location)
             # Use relative path to the summary file
-            paper['summary'] = summary_path.replace('docs/', '')
+            paper['summary'] = summary_path.replace(f'{save_location}/', '')
     return response_json
 
 def generate_report(model, paper_data, prompt_template, date_string):
     prompt = prompt_template.replace("{paper_data}", paper_data)
     response = model.generate_content(prompt)
     response_json = clean_model_response(response)
-    modified_response_json =add_summary_to_response(response_json)
-    markdown_content = json_to_markdown(modified_response_json)
+    summary_save_location = os.path.join('docs', date_string)
+    modified_response_json =add_summary_to_response(response_json, save_location=summary_save_location)
+    markdown_content = json_to_markdown(modified_response_json, date_string)
     return markdown_content
     # text_with_date = f"## {date_string}\n\n{response.text}"
     # return text_with_date
@@ -77,8 +78,9 @@ def main():
     date_string = extract_date_from_paper_data_path(args.paper_data_path)
 
     if args.report_path is None:
-        report_dir = 'docs'
-        args.report_path = os.path.join(report_dir, f"report_{date_string}.md")
+        report_dir = os.path.join('docs', date_string)
+        os.makedirs(report_dir, exist_ok=True)  # Create the folder if it doesn't exist
+        args.report_path = os.path.join(report_dir, 'index.md')
     
     prompt_template_path = 'prompts/identify_papers.txt'
     
