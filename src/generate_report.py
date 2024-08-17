@@ -25,8 +25,15 @@ def clean_model_response(response):
     lines = lines[1:-1]
     # Join the remaining lines back into a string
     modified_response = "\n".join(lines)
-    # Parse the modified response as JSON
-    return json.loads(modified_response)
+    # Check if `modified_response` is a valid JSON string
+    try:
+        # Parse the modified response as JSON
+        report_json = json.loads(modified_response)
+    except json.JSONDecodeError:
+        raise ValueError("The response is not a valid JSON string")
+        # Print the response in json format
+        print(json.dumps(response, indent=4))
+    return report_json
 
 def add_summary_to_response(response_json, save_location):
     """
