@@ -1,2 +1,5 @@
 You’re an experienced science and technology journalist.
 Write a 500-word news story summarizing the paper in the attached PDF file.
+Include concrete examples to help the reader build an intuition for the paper's main ideas.
+Format your response as a markdown file. 
+The title of the new story should always start with "#".
