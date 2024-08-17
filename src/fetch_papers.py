@@ -37,3 +37,4 @@ with open(filename, 'w') as file:
     summary = paper['paper']['summary'].replace('\n', ' ')
     file.write(f"Summary: {summary}\n")
     file.write("---\n")
+print(f"Papers metadata fetched and saved to: {filename}")
