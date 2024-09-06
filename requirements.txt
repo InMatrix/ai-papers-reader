@@ -3,3 +3,4 @@ requests
 google-generativeai
 pyyaml
 python-frontmatter
+beautifulsoup4
