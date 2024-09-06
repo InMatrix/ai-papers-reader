@@ -44,7 +44,8 @@ def add_summary_to_response(response_json, save_location):
         for paper in topic['papers']:
             summary_path = summarize_pdf.main(paper['url'],save_location=save_location)
             # Use relative path to the summary file
-            paper['summary'] = summary_path.replace(f'{save_location}/', '').replace('.md', '.html')
+            if summary_path is not None:
+                paper['summary'] = summary_path.replace(f'{save_location}/', '').replace('.md', '.html')
     return response_json
 
 def generate_report(model, paper_data, prompt_template, date_string):

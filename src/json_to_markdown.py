@@ -15,11 +15,15 @@ def json_to_markdown(data: List[Dict[str, Any]], date: str) -> str:
             title = paper['title']
             relevance = paper['relevance']
             url = paper['url']
-            summary = paper['summary']
             
             markdown += f"### {title}\n\n"
             markdown += f"**Relevance:** {relevance}\n\n"
-            markdown += f"💡 **[Summary]({summary})** 📄 **[Full paper]({url})**\n\n"
+            
+            if 'summary' in paper:
+                summary = paper['summary']
+                markdown += f"💡 **[Summary]({summary})** 📄 **[Full paper]({url})**\n\n"
+            else:
+                markdown += f"📄 **[Full paper]({url})**\n\n"
     
     return markdown
 

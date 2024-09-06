@@ -93,7 +93,12 @@ def summarize_pdf(pdf_content):
     # Generate content using the uploaded file
     with open('prompts/summarize_paper.txt', 'r') as file:
         prompt = file.read().strip()
-    response = model.generate_content([prompt, uploaded_file])
+    
+    try:
+        response = model.generate_content([prompt, uploaded_file])
+    except Exception as e:
+        print(f"Error generating content: {e}")
+        return None
     
     # Clean up the temporary file
     os.unlink(temp_pdf.name)
@@ -151,6 +156,10 @@ def main(pdf_url, save_location="docs/summaries"):
     
     print(">>> Generating summary...")
     summary = summarize_pdf(pdf_content)
+
+    if summary is None:
+        print(f"Failed to generate summary for {pdf_url}")
+        return None
 
     # Add front matter to the summary
     print(">>> Adding front matter...")
