@@ -1,10 +1,22 @@
 import os
 import argparse
 import json
+import typing
 import google.generativeai as genai
 import summarize_pdf
 from json_to_markdown import json_to_markdown 
 
+# Define the data structures for the JSON response
+class Paper(typing.TypedDict):
+    title: str
+    relevance: str
+    url: str
+
+class Topic(typing.TypedDict):
+    topic: str
+    papers: list[Paper]
+
+# Helper functions
 def read_file(filename):
     with open(filename, 'r') as file:
         return file.read()
@@ -14,26 +26,15 @@ def write_file(filename, content):
         file.write(content)
 
 
-def clean_model_response(response):
-    """
-    Clean up the response from the AI model 
-    by removing the first and last lines.
-    """
-    # Split the string by newlines
-    lines = response.text.splitlines()
-    # Remove the first and last lines
-    lines = lines[1:-1]
-    # Join the remaining lines back into a string
-    modified_response = "\n".join(lines)
-    # Check if `modified_response` is a valid JSON string
+def parse_model_response(response):
     try:
         # Parse the modified response as JSON
-        report_json = json.loads(modified_response)
+        response_json = json.loads(response.text)
     except json.JSONDecodeError:
-        raise ValueError("The response is not a valid JSON string")
         # Print the response in json format
-        print(json.dumps(response, indent=4))
-    return report_json
+        print(json.dumps(response.text, indent=4))
+        raise ValueError("The response is not a valid JSON string")
+    return response_json
 
 def add_summary_to_response(response_json, save_location):
     """
@@ -50,8 +51,14 @@ def add_summary_to_response(response_json, save_location):
 
 def generate_report(model, paper_data, prompt_template, date_string):
     prompt = prompt_template.replace("{paper_data}", paper_data)
-    response = model.generate_content(prompt)
-    response_json = clean_model_response(response)
+    # generate suggested papers in JSON format
+    response = model.generate_content(
+        prompt,
+        generation_config=genai.GenerationConfig(
+            response_mime_type="application/json", response_schema=list[Topic]
+        ),
+    )
+    response_json = parse_model_response(response)        
     summary_save_location = os.path.join('docs', date_string)
     modified_response_json =add_summary_to_response(response_json, save_location=summary_save_location)
     markdown_content = json_to_markdown(modified_response_json, date_string)
@@ -97,7 +104,7 @@ def main():
         raise ValueError("GOOGLE_API_KEY environment variable is not set")
     
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     paper_data = read_file(args.paper_data_path)
     prompt_template = read_file(prompt_template_path)
