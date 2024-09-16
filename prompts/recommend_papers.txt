@@ -55,4 +55,4 @@ Step 2: From the list of recently published AI papers enclosed in the <papers> X
 {paper_data}
 </papers>
 
-Step 3: Generate your recommendations. Start with the above topics and under each topic add papers that are most relevant to the topic. For each paper, provide its title, url, and a short explaination about why you think it's relevant to the topic.
+Step 3: Generate your recommendations. Start with the above topics and under each topic add papers that are most relevant to the topic. For each paper, provide its title, url, and a short explanation about why you think it's relevant to the topic.
