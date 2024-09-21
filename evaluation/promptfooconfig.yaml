@@ -23,6 +23,8 @@ tests:
     vars:
       topic: Machine Learning
       papers: ${readFile('papers.json')}
+    assert:
+      - type: contains-json
     expect: |
       [
         {"id": "2103.01234", "relevance": 5},
@@ -34,11 +36,12 @@ tests:
         {"id": "2109.44556", "relevance": 1},
         {"id": "2110.77889", "relevance": 1}
       ]
-
   - description: Evaluate paper relevance scoring for Quantum Computing topic
     vars:
       topic: Quantum Computing
       papers: ${readFile('papers.json')}
+    assert:
+      - type: contains-json
     expect: |
       [
         {"id": "2103.01234", "relevance": 2},
@@ -55,6 +58,8 @@ tests:
     vars:
       topic: Biotechnology
       papers: ${readFile('papers.json')}
+    assert:
+      - type: contains-json
     expect: |
       [
         {"id": "2103.01234", "relevance": 2},
