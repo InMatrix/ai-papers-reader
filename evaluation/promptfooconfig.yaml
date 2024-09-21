@@ -6,14 +6,11 @@ providers:
     config:
       temperature: 1.0
       maxOutputTokens: 1024
-  
-config:
-  defaultTest:
-    assert:
-      - type: python
-        value: |
-          from metrics import calculate_scoring_metrics
-          return calculate_scoring_metrics(output, expected)
+
+assertionTemplates:
+  scoringError:
+    type: python
+    value: file://metrics.py
 
 prompts:
   - file://prompt.txt
@@ -24,7 +21,8 @@ tests:
       topic: Machine Learning
       papers: file://papers.json
     assert:
-      - type: contains-json
+      - type: is-json
+      - $ref: "#/assertionTemplates/scoringError"
     expect: |
       [
         {"id": "2103.01234", "relevance": 5},
@@ -41,7 +39,8 @@ tests:
       topic: Quantum Computing
       papers: file://papers.json
     assert:
-      - type: contains-json
+      - type: is-json
+      - $ref: "#/assertionTemplates/scoringError"
     expect: |
       [
         {"id": "2103.01234", "relevance": 2},
@@ -59,7 +58,8 @@ tests:
       topic: Biotechnology
       papers: file://papers.json
     assert:
-      - type: contains-json
+      - type: is-json
+      - $ref: "#/assertionTemplates/scoringError"
     expect: |
       [
         {"id": "2103.01234", "relevance": 2},

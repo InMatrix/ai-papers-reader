@@ -4,10 +4,10 @@ import json
 import math
 from typing import List, Dict
 
-def calculate_scoring_metrics(output: str, expected: List[Dict]) -> Dict:
+# TODO: read expected results from file
+def get_assert(output: str, context) -> Dict:
     scored_papers = json.loads(output)
-    expected_dict = {paper['id']: paper['relevance'] for paper in expected}
-    
+    expected_dict = {paper['id']: paper['relevance'] for paper in context['test']['expected']}
     # Mean Absolute Error
     mae = sum(abs(paper['relevance'] - expected_dict[paper['id']]) for paper in scored_papers) / len(scored_papers)
     
@@ -27,21 +27,3 @@ def calculate_scoring_metrics(output: str, expected: List[Dict]) -> Dict:
         'reason': f'MAE: {mae:.2f}, RMSE: {rmse:.2f}, Spearman: {spearman:.2f}'
     }
 
-def calculate_metrics(output: str, expected: List[Dict]) -> Dict:
-    selected_papers = json.loads(output)
-    relevant_papers = [paper for paper in expected if paper['relevance'] >= 3]
-    
-    k = 5
-    precision_at_k = len([p for p in selected_papers[:k] if any(rp['id'] == p['id'] for rp in relevant_papers)]) / k
-    recall_at_k = len([p for p in selected_papers[:k] if any(rp['id'] == p['id'] for rp in relevant_papers)]) / len(relevant_papers)
-    
-    f1_score = 2 * (precision_at_k * recall_at_k) / (precision_at_k + recall_at_k) if (precision_at_k + recall_at_k) > 0 else 0
-    
-    ndcg = sum((next((rp['relevance'] for rp in relevant_papers if rp['id'] == paper['id']), 0) / (math.log2(i + 2)))
-               for i, paper in enumerate(selected_papers))
-    
-    return {
-        'pass': f1_score > 0.7,  # Adjust threshold as needed
-        'score': f1_score,
-        'reason': f'Precision@{k}: {precision_at_k:.2f}, Recall@{k}: {recall_at_k:.2f}, F1: {f1_score:.2f}, NDCG: {ndcg:.2f}'
-    }

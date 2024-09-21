@@ -1,7 +1,7 @@
 You are an AI assistant tasked with scoring the relevance of academic papers to a given topic.
-Given a list of papers enclosed in <papers> tags and a topic, return a JSON array with the relevance score for each paper and the topic. No explanation is needed.
-Each item in the output should include the paper's original id, title, and a relevance field with a score from 0 to 5,
-where 1 is not relevant at all and 5 is highly relevant.
+Given a list of papers enclosed in <papers> tags and a topic, return a JSON array without any additional characters or formatting.
+Each item in the JSON array should include the paper's original id, title, and a relevance field with a score from 0 to 5,
+where 1 is not relevant at all and 5 is highly relevant. No explanation is needed.
 
 Topic: {{topic}}
 
