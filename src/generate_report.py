@@ -6,16 +6,6 @@ import google.generativeai as genai
 import summarize_pdf
 from json_to_markdown import json_to_markdown 
 
-# Define the data structures for the JSON response
-class Paper(typing.TypedDict):
-    title: str
-    relevance: str
-    url: str
-
-class Topic(typing.TypedDict):
-    topic: str
-    papers: list[Paper]
-
 # Helper functions
 def read_file(filename):
     with open(filename, 'r') as file:
@@ -28,11 +18,17 @@ def write_file(filename, content):
 
 def parse_model_response(response):
     try:
-        # Parse the modified response as JSON
-        response_json = json.loads(response.text)
+        # Remove leading and trailing whitespace and markdown code block markers
+        cleaned_response = response.text.strip()
+        if cleaned_response.startswith("```json") and cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response[7:-3].strip()
+        # Remove newline characters
+        cleaned_response = cleaned_response.replace("\n", "")
+        # Parse the cleaned response as JSON
+        response_json = json.loads(cleaned_response)
     except json.JSONDecodeError:
         # Print the response in json format
-        print(json.dumps(response.text, indent=4))
+        print(json.dumps(cleaned_response, indent=4))
         raise ValueError("The response is not a valid JSON string")
     return response_json
 
@@ -51,17 +47,11 @@ def add_summary_to_response(response_json, save_location):
 
 def generate_report(model, paper_data, prompt_template, date_string):
     prompt = prompt_template.replace("{paper_data}", paper_data)
-    # generate suggested papers in JSON format
-    response = model.generate_content(
-        prompt,
-        generation_config=genai.GenerationConfig(
-            response_mime_type="application/json", response_schema=list[Topic]
-        ),
-    )
+    response = model.generate_content(prompt)
     response_json = parse_model_response(response)        
-    summary_save_location = os.path.join('docs', date_string)
-    modified_response_json =add_summary_to_response(response_json, save_location=summary_save_location)
-    markdown_content = json_to_markdown(modified_response_json, date_string)
+    # summary_save_location = os.path.join('docs', date_string)
+    # response_json =add_summary_to_response(response_json, save_location=summary_save_location)
+    markdown_content = json_to_markdown(response_json, date_string)
     # add front matter to the markdown content
     markdown_content = f"---\nlayout: default\ntitle: {date_string}\npermalink: /{date_string}/\n---\n\n{markdown_content}"
     return markdown_content
