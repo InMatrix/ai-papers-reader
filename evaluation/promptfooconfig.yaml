@@ -1,0 +1,68 @@
+# Learn more about building a configuration: https://promptfoo.dev/docs/configuration/guide
+description: "Identifying Paper Topics Evaluation"
+
+providers:
+  - id: google:gemini-1.5-flash
+    config:
+      temperature: 1.0
+      maxOutputTokens: 1024
+  
+config:
+  defaultTest:
+    assert:
+      - type: python
+        value: |
+          from metrics import calculate_scoring_metrics
+          return calculate_scoring_metrics(output, expected)
+
+prompts:
+  - file://prompt.txt
+
+tests:
+  - description: Evaluate paper relevance scoring for Machine Learning topic
+    vars:
+      topic: Machine Learning
+      papers: ${readFile('papers.json')}
+    expect: |
+      [
+        {"id": "2103.01234", "relevance": 5},
+        {"id": "2104.56789", "relevance": 1},
+        {"id": "2105.98765", "relevance": 4},
+        {"id": "2106.24680", "relevance": 2},
+        {"id": "2107.13579", "relevance": 5},
+        {"id": "2108.11223", "relevance": 2},
+        {"id": "2109.44556", "relevance": 1},
+        {"id": "2110.77889", "relevance": 1}
+      ]
+
+  - description: Evaluate paper relevance scoring for Quantum Computing topic
+    vars:
+      topic: Quantum Computing
+      papers: ${readFile('papers.json')}
+    expect: |
+      [
+        {"id": "2103.01234", "relevance": 2},
+        {"id": "2104.56789", "relevance": 1},
+        {"id": "2105.98765", "relevance": 1},
+        {"id": "2106.24680", "relevance": 5},
+        {"id": "2107.13579", "relevance": 1},
+        {"id": "2108.11223", "relevance": 5},
+        {"id": "2109.44556", "relevance": 0},
+        {"id": "2110.77889", "relevance": 1}
+      ]
+
+  - description: Evaluate paper relevance scoring for Biotechnology topic
+    vars:
+      topic: Biotechnology
+      papers: ${readFile('papers.json')}
+    expect: |
+      [
+        {"id": "2103.01234", "relevance": 2},
+        {"id": "2104.56789", "relevance": 0},
+        {"id": "2105.98765", "relevance": 1},
+        {"id": "2106.24680", "relevance": 0},
+        {"id": "2107.13579", "relevance": 2},
+        {"id": "2108.11223", "relevance": 1},
+        {"id": "2109.44556", "relevance": 5},
+        {"id": "2110.77889", "relevance": 0}
+      ]
