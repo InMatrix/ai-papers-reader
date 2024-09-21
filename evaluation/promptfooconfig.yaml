@@ -22,7 +22,7 @@ tests:
   - description: Evaluate paper relevance scoring for Machine Learning topic
     vars:
       topic: Machine Learning
-      papers: ${readFile('papers.json')}
+      papers: file://papers.json
     assert:
       - type: contains-json
     expect: |
@@ -39,7 +39,7 @@ tests:
   - description: Evaluate paper relevance scoring for Quantum Computing topic
     vars:
       topic: Quantum Computing
-      papers: ${readFile('papers.json')}
+      papers: file://papers.json
     assert:
       - type: contains-json
     expect: |
@@ -57,7 +57,7 @@ tests:
   - description: Evaluate paper relevance scoring for Biotechnology topic
     vars:
       topic: Biotechnology
-      papers: ${readFile('papers.json')}
+      papers: file://papers.json
     assert:
       - type: contains-json
     expect: |
