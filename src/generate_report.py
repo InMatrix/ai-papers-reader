@@ -52,7 +52,7 @@ def generate_report(model, paper_data, prompt_template, date_string):
     response_json = parse_model_response(response)
     # create paper summaries 
     summary_save_location = os.path.join('docs', date_string)
-    response_json =add_summary_to_response(response_json, save_location=summary_save_location)
+    response_json = add_summary_to_response(response_json, save_location=summary_save_location)
     # convert json to markdown
     markdown_content = json_to_markdown(response_json, date_string)
     # add front matter to the markdown content
