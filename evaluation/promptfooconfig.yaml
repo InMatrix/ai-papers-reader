@@ -7,13 +7,13 @@ providers:
       temperature: 1.0
       maxOutputTokens: 1024
 
-assertionTemplates:
-  scoringError:
-    type: python
-    value: file://metrics.py
+defaultTest:
+  assert:
+    - type: python
+      value: file://metrics.py
 
 prompts:
-  - file://prompt.txt
+  - file://prompt_select_papers.txt
 
 tests:
   - description: Evaluate paper relevance scoring for Machine Learning topic
@@ -22,36 +22,13 @@ tests:
       papers: file://papers.json
     assert:
       - type: is-json
-      - $ref: "#/assertionTemplates/scoringError"
-    expect: |
-      [
-        {"id": "2103.01234", "relevance": 5},
-        {"id": "2104.56789", "relevance": 1},
-        {"id": "2105.98765", "relevance": 4},
-        {"id": "2106.24680", "relevance": 2},
-        {"id": "2107.13579", "relevance": 5},
-        {"id": "2108.11223", "relevance": 2},
-        {"id": "2109.44556", "relevance": 1},
-        {"id": "2110.77889", "relevance": 1}
-      ]
+  
   - description: Evaluate paper relevance scoring for Quantum Computing topic
     vars:
       topic: Quantum Computing
       papers: file://papers.json
     assert:
       - type: is-json
-      - $ref: "#/assertionTemplates/scoringError"
-    expect: |
-      [
-        {"id": "2103.01234", "relevance": 2},
-        {"id": "2104.56789", "relevance": 1},
-        {"id": "2105.98765", "relevance": 1},
-        {"id": "2106.24680", "relevance": 5},
-        {"id": "2107.13579", "relevance": 1},
-        {"id": "2108.11223", "relevance": 5},
-        {"id": "2109.44556", "relevance": 0},
-        {"id": "2110.77889", "relevance": 1}
-      ]
 
   - description: Evaluate paper relevance scoring for Biotechnology topic
     vars:
@@ -59,15 +36,3 @@ tests:
       papers: file://papers.json
     assert:
       - type: is-json
-      - $ref: "#/assertionTemplates/scoringError"
-    expect: |
-      [
-        {"id": "2103.01234", "relevance": 2},
-        {"id": "2104.56789", "relevance": 0},
-        {"id": "2105.98765", "relevance": 1},
-        {"id": "2106.24680", "relevance": 0},
-        {"id": "2107.13579", "relevance": 2},
-        {"id": "2108.11223", "relevance": 1},
-        {"id": "2109.44556", "relevance": 5},
-        {"id": "2110.77889", "relevance": 0}
-      ]
