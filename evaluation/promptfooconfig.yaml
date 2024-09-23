@@ -16,23 +16,12 @@ prompts:
   - file://prompt_select_papers.txt
 
 tests:
-  - description: Evaluate paper relevance scoring for Machine Learning topic
+  - description: Evaluate accuracy of paper selection
     vars:
-      topic: Machine Learning
-      papers: file://papers.json
-    assert:
-      - type: is-json
-  
-  - description: Evaluate paper relevance scoring for Quantum Computing topic
-    vars:
-      topic: Quantum Computing
-      papers: file://papers.json
-    assert:
-      - type: is-json
-
-  - description: Evaluate paper relevance scoring for Biotechnology topic
-    vars:
-      topic: Biotechnology
+      topic: 
+        - Machine Learning
+        - Quantum Computing
+        - Biotechnology
       papers: file://papers.json
     assert:
       - type: is-json
