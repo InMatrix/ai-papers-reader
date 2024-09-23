@@ -19,9 +19,11 @@ tests:
   - description: Evaluate accuracy of paper selection
     vars:
       topic: 
-        - Machine Learning
-        - Quantum Computing
-        - Biotechnology
-      papers: file://papers.json
+        - Generative AI for Assisting Software Developers
+        # - Prompt Engineering Techniques
+        # - Human-in-the-loop Machine Learning
+        # - Generative AI for UI Design and Engineering
+        # - Techniques for Explaining AI behavior
+      papers: file://paper_metadata_2024-09-20.json
     assert:
       - type: is-json

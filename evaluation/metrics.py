@@ -10,7 +10,7 @@ def get_assert(output: str, context) -> Dict:
     selected_papers = [paper['id'] for paper in model_response]
     
     # Read expected results from golden.json
-    with open('golden.json', 'r') as f:
+    with open('golden_papers_2024-09-20.json', 'r') as f:
         golden = json.load(f)
 
     golden_papers = golden[topic]

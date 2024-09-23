@@ -1,6 +1,6 @@
 You are an AI assistant tasked with selecting papers relevant to a given topic from the list of papers enclosed in <papers> tags.
 Return a JSON array without any additional characters or formatting.
-Each item in the JSON array should include the selected paper's id, title.
+Each item in the JSON array should include the selected paper's id, title, and a relevance field where a 100-word explanation about why the paper is relevant to the topic is offerred. 
 
 Topic: {{topic}}
 

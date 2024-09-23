@@ -1,7 +1,24 @@
 {
     "Generative AI for Assisting Software Developers": [
-        "2103.01234",
-        "2105.98765",
-        "2107.13579"
+        "2409.12186",
+        "2409.06957"
+    ],
+    "Prompt Engineering Techniques": [
+        "2409.12183",
+        "2409.11901"
+    ],
+    "Human-in-the-loop Machine Learning": [
+        "2409.06957",
+        "2409.09269",
+        "2409.11564",
+        "2409.11733",
+        "2409.10819"
+    ],
+    "Generative AI for UI Design and Engineering": [
+        "2409.10819",
+        "2409.11406",
+        "2409.08857"
+    ],
+    "Techniques for Explaining AI behavior": [
     ]
 }
