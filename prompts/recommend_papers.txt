@@ -6,47 +6,7 @@ Here's a specific task:
 Step 1: Study the following list of research topics and their examples enclosed in the <topics> XML tag.
 
 <topics>
-1. Generative AI for Assisting Software Developers
-
-Generative AI, particularly Large Language Models (LLMs), is increasingly being used to assist software developers in various tasks. Some examples include:
-- Code completion and generation: Tools like GitHub Copilot use LLMs to suggest code snippets, complete functions, or even generate entire code blocks based on natural language descriptions.
-- Bug detection and fixing: AI systems can analyze code to identify potential bugs, suggest fixes, or even automatically repair simple issues.
-- Documentation generation: LLMs can help create or improve code documentation by generating summaries, explaining complex functions, or writing API documentation.
-- Code refactoring: AI can suggest ways to improve code structure, readability, and efficiency.
-
-2. Prompt Engineering Techniques
-
-Prompt engineering involves crafting input prompts to elicit better responses from AI models. Some techniques include:
-- Chain-of-thought prompting: Encouraging the model to break down complex problems into steps, improving reasoning capabilities.
-- Few-shot learning: Providing a few examples in the prompt to guide the model's behavior for specific tasks.
-- Role-playing: Assigning a specific role or persona to the AI to influence its response style and content.
-- Instruction fine-tuning: Training models on instruction-following datasets to improve their ability to understand and execute specific commands.
-
-3. Human-in-the-loop Machine Learning
-
-This approach incorporates human feedback into the machine learning process. Examples include:
-- Active learning: The model identifies uncertain or difficult cases and requests human input to improve its performance.
-- Reinforcement learning from human feedback: Using human preferences to train reward models, which then guide the AI's behavior.
-- Interactive labeling: Humans provide labels or corrections for model outputs, which are then used to fine-tune the model.
-- Collaborative filtering: Combining human expertise with AI recommendations in systems like content moderation.
-
-4. Generative AI for UI Design and Engineering
-
-Generative AI is being used to enhance UI design processes:
-- Design ideation: AI can generate multiple UI design concepts based on text descriptions or requirements.
-- Responsive design: Automatically adapting designs for different screen sizes and devices.
-- Accessibility improvements: Suggesting color contrast adjustments or layout changes to improve accessibility.
-- Prototyping: Generating interactive prototypes from sketches or descriptions.
-- Design system management: Automating the creation and maintenance of consistent design elements across applications.
-
-5. Techniques for Explaining AI behavior
-
-Explainable AI (XAI) aims to make AI decision-making processes more transparent and interpretable. Some techniques include:
-- LIME (Local Interpretable Model-agnostic Explanations): Providing local explanations for individual predictions by perturbing input features.
-- SHAP (SHapley Additive exPlanations): Calculating feature importance based on game theory concepts.
-- Attention visualization: In models like transformers, visualizing attention weights to show which parts of the input the model focuses on.
-- Counterfactual explanations: Showing how changes in input would affect the output, helping users understand decision boundaries.
-- Rule extraction: Deriving human-readable rules from complex models to approximate their behavior.
+{topics}
 </topics>
 
 Step 2: From the list of recently published AI papers enclosed in the <papers> XML tag below, identify 0 to 3 papers most relevant to each of the research topics described above, based on the the paper's title and description. Do NOT introduce new topics. 
