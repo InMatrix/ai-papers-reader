@@ -1,6 +1,7 @@
 import os
 import argparse
 import json
+import yaml
 import google.generativeai as genai
 import summarize_pdf
 from json_to_markdown import json_to_markdown
@@ -51,7 +52,7 @@ def add_summary_to_response(response_json, save_location):
 
 
 def inflate_prompt(
-    prompt_template_path, paper_data_path, topics_path="prompts/_topics.txt"
+    prompt_template_path, paper_data_path, topics_path="prompts/_topics.yaml"
 ):
     """
     Generates a prompt by replacing placeholders in a template with actual data.
@@ -59,16 +60,23 @@ def inflate_prompt(
     Args:
         prompt_template_path (str): The file path to the prompt template.
         paper_data_path (str): The file path to the paper data.
-        topics_path (str, optional): The file path to the topics data. Defaults to "prompts/_topics.txt".
+        topics_path (str, optional): The file path to the topics data. Defaults to "prompts/_topics.yaml".
 
     Returns:
         str: The generated prompt with placeholders replaced by actual data.
     """
     prompt_template = read_file(prompt_template_path)
     paper_data = read_file(paper_data_path)
-    topics = read_file(topics_path)
+    
+    # Read topics from YAML file
+    with open(topics_path, 'r') as file:
+        topics = yaml.safe_load(file)
+    
+    # Convert topics to a string format suitable for the prompt
+    topics_str = "\n".join([f"{index + 1}. {topic['topic']}\n{topic['description']}" for index, topic in enumerate(topics)])
+    
     prompt = prompt_template.replace("{paper_data}", paper_data).replace(
-        "{topics}", topics
+        "{topics}", topics_str
     )
     return prompt
 
