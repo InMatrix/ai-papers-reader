@@ -19,9 +19,9 @@ def json_to_markdown(data: List[Dict[str, Any]], date: str) -> str:
             markdown += f"### {title}\n\n"
             markdown += f"**Relevance:** {relevance}\n\n"
             
-            if 'summary' in paper:
-                summary = paper['summary']
-                markdown += f"💡 **[Summary]({summary})** 📄 **[Full paper]({url})**\n\n"
+            if 'summary_path' in paper:
+                summary_path = paper['summary_path'].replace('.md', '')
+                markdown += f"💡 **[Summary]({summary_path})** 📄 **[Full paper]({url})**\n\n"
             else:
                 markdown += f"📄 **[Full paper]({url})**\n\n"
     

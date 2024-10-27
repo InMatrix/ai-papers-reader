@@ -42,13 +42,13 @@ def add_summary_to_response(response_json, save_location):
     """
     for topic in response_json:
         for paper in topic["papers"]:
-            summary_path = summarize_pdf.main(paper["url"], save_location=save_location)
+            summary_path = summarize_pdf.get_summary_path(paper["url"], save_location)
+            summary_content = summarize_pdf.pdf_to_summary(paper["url"], summary_path)
             if summary_path is not None:
-                summary_content = read_file(summary_path)
                 # Use relative path to the summary file
-                paper["summary"] = summary_path.replace(
+                paper["summary_path"] = summary_path.replace(
                     f"{save_location}/", ""
-                ).replace(".md", ".html")
+                )
                 paper["summary_content"] = summary_content
     return response_json
 
@@ -93,6 +93,21 @@ def is_relevant(summary, topic_description, model, threshold=0.5):
     relevance_score = float(response.text.strip())
     return relevance_score
 
+def write_summary_files(response_json, save_location):
+    """
+    Write the summary content to a file for each paper in the response json.
+    """
+    for topic in response_json:
+        for paper in topic["papers"]:
+            summary_path = paper.get("summary_path")
+            summary_content = paper.get("summary_content")
+            if summary_path is not None and summary_content is not None:
+                # Write the summary content to a file
+                with open(os.path.join(save_location, summary_path), "w") as file:
+                    file.write(summary_content)
+                # Print out which paper's summary has been saved to a file
+                print(f"Saved a summary of the paper {paper['title']} to {summary_path}")
+
 def inflate_prompt(
     prompt_template_path, paper_data_path, topics_path="prompts/_topics.yaml"
 ):
@@ -136,8 +151,7 @@ def generate_report(model, prompt, topics, date_string, skip_summary=False):
         )
         # assess relevance based on paper summaries and drop less relevant papers
         response_json = assess_relevance(response_json, topics, model)
-        # TODO: delete summaries of dropped papers
-
+        write_summary_files(response_json, summary_save_location)
     
     # convert json to markdown
     markdown_content = json_to_markdown(response_json, date_string)
