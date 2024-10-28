@@ -1,8 +1,8 @@
 """
 PDF Summarizer using Google's Gemini 1.5 Flash Model
 
-This script downloads a PDF from a given URL and generates a summary using 
-Google's Gemini 1.5 Flash model. It utilizes the google-generativeai library 
+This script downloads a PDF from a given URL and generates a summary using
+Google's Gemini 1.5 Flash model. It utilizes the google-generativeai library
 to interact with the Gemini model and directly uploads the PDF for processing.
 
 Features:
@@ -26,7 +26,7 @@ Usage:
 3. Run the script with a PDF URL as an argument:
    python summarize_pdf.py https://arxiv.org/pdf/2407.16741
 
-Note: Ensure you have the necessary permissions and comply with the terms of service 
+Note: Ensure you have the necessary permissions and comply with the terms of service
 for both the PDF source and the Google Generative AI API.
 """
 
@@ -38,7 +38,7 @@ import google.generativeai as genai
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 def download_pdf(url):
     """
@@ -53,7 +53,7 @@ def download_pdf(url):
     response = requests.get(url)
     return response.content
 
-def get_summary_path(pdf_url, save_location="docs/summaries"):
+def get_summary_path(pdf_url, save_location):
     """
     Get the path to the summary file for a given PDF URL.
 
@@ -106,26 +106,26 @@ def summarize_pdf(pdf_content):
     return response.text
 
 def add_front_matter(summary, summary_path):
-        """
-        Adds front matter to the summary.
+    """
+    Adds front matter to the summary.
 
-        Args:
-        summary (str): The summary to which front matter will be added.
-        summary_path (str): The path of the summary file, used to generate the permalink.
+    Args:
+    summary (str): The summary to which front matter will be added.
+    summary_path (str): The path of the summary file, used to generate the permalink.
 
-        Returns:
-        str: The summary with added front matter.
-        """
-        # Extract the title from the first line of the summary
-        title_line = summary.split('\n', 1)[0]
-        # Remove all the leading or trailing '#', '*' and whitespace
-        title = title_line.strip('#* ')
-        
-        # Generate the permalink based on the summary file's path
-        permalink = summary_path.replace(".md", ".html").replace("docs/","")
-        
-        front_matter = f"---\nlayout: default\ntitle: \'{title}\'\npermalink: {permalink}\n---\n"
-        return front_matter + summary
+    Returns:
+    str: The summary with added front matter.
+    """
+    # Extract the title from the first line of the summary
+    title_line = summary.split('\n', 1)[0]
+    # Remove all the leading or trailing '#', '*' and whitespace
+    title = title_line.strip('#* ')
+    
+    # Generate the permalink based on the summary file's path
+    permalink = summary_path.replace(".md", "/").replace("docs/","")
+    
+    front_matter = f"---\nlayout: default\ntitle: \'{title}\'\npermalink: {permalink}\n---\n"
+    return front_matter + summary
 
 def save_summary(summary, output_file):
     """
@@ -138,18 +138,20 @@ def save_summary(summary, output_file):
     with open(output_file, 'w') as f:
         f.write(summary)
 
-def main(pdf_url, save_location="docs/summaries"):
+def pdf_to_summary(pdf_url, summary_path):
     """
-    Main function to orchestrate the PDF download and summarization process.
-
+    Get the content of the summary for a given PDF URL without saving it to a file.
     Args:
-    pdf_url (str): The URL of the PDF to summarize.
-    save_location (str): Optional. The directory to save the summary file. Default is "docs/summaries".
+    pdf_url (str): The URL of the PDF file.
+
+    Returns:
+    str: The content of the summary.
     """
-    summary_path = get_summary_path(pdf_url, save_location)
     if os.path.exists(summary_path):
         print(f"Summary for {pdf_url} already exists at {summary_path}")
-        return summary_path
+        # Return the content of the existing summary file
+        with open(summary_path, 'r') as f:
+            return f.read()
     
     print(f">>> Downloading PDF from {pdf_url}...")
     pdf_content = download_pdf(pdf_url)
@@ -165,8 +167,26 @@ def main(pdf_url, save_location="docs/summaries"):
     print(">>> Adding front matter...")
     summary_with_front_matter = add_front_matter(summary, summary_path)
 
+    return summary_with_front_matter
+
+def main(pdf_url, save_location):
+    """
+    Main function to orchestrate the PDF download and summarization process.
+
+    Args:
+    pdf_url (str): The URL of the PDF to summarize.
+    save_location (str): Optional. The directory to save the summary file. Default is "docs/summaries".
+    """
+    summary_path = get_summary_path(pdf_url, save_location)
+
+    summary_content = pdf_to_summary(pdf_url, summary_path)
+
+    if summary_content is None:
+        print(f"Failed to generate summary for {pdf_url}")
+        return None
+
     print(f">>> Saving summary to {summary_path}\n")
-    save_summary(summary_with_front_matter, summary_path)
+    save_summary(summary_content, summary_path)
     return summary_path
 
 if __name__ == "__main__":

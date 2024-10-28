@@ -10,45 +10,57 @@ permalink: /2024-10-25/
 
 ### LLM-based Optimization of Compound AI Systems: A Survey
 
-**Relevance:** This paper focuses on the use of LLMs as optimizers for compound AI systems, which includes software development tools. It examines how LLMs can be used to generate code, optimize parameters, and improve the overall efficiency of software development processes. This aligns directly with the topic of generative AI for assisting software developers by highlighting the potential of LLMs in automating tasks and improving code quality.
+**Relevance:** This paper presents a comprehensive overview of LLM-based optimization methods for compound AI systems, which often involve code generation and execution. The survey highlights how LLMs can be used to optimize the parameters and behavior of AI systems, improving their efficiency and effectiveness in various software development tasks.
 
-💡 **[Summary](2410.16392.html)** 📄 **[Full paper](https://arxiv.org/pdf/2410.16392)**
+💡 **[Summary](2410.16392/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.16392)**
+
+## AI Agents
+
+### Agent-to-Sim: Learning Interactive Behavior Models from Casual Longitudinal Videos
+
+**Relevance:** This paper focuses on learning interactive behavior models of 3D agents from casual longitudinal videos. This research is relevant to AI agents as it addresses the challenge of learning from real-world data and transferring this knowledge to simulations, allowing for the development of more realistic and adaptable AI agents.
+
+💡 **[Summary](2410.16259/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.16259)**
+
+### Steering Your Generalists: Improving Robotic Foundation Models via Value Guidance
+
+**Relevance:** This paper presents a method for improving the performance of generalist robotic policies by re-ranking their actions according to a value function learned via offline RL. This research aligns with the development of AI agents that can reason, plan, and execute actions in complex environments.
+
+💡 **[Summary](2410.13816/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.13816)**
 
 ## Prompt Engineering Techniques
 
 ### TP-Eval: Tap Multimodal LLMs' Potential in Evaluation by Customizing Prompts
 
-**Relevance:** This paper explores the impact of prompt engineering on evaluating multimodal LLMs. It highlights the importance of carefully crafting prompts to ensure accurate and reliable evaluation. The proposed TP-Eval framework focuses on customizing prompts for individual models, reducing bias and maximizing the potential of each model. This aligns with the topic of prompt engineering by discussing how tailored prompts can significantly affect the performance and understanding of AI models.
+**Relevance:** This paper explores the impact of prompt customization on the performance of multimodal LLMs, emphasizing the need for prompt engineering techniques to effectively evaluate and leverage their capabilities. It demonstrates how prompt variations can significantly affect the model's performance and explores methods for designing effective prompts for specific tasks.
 
-💡 **[Summary](2410.18071.html)** 📄 **[Full paper](https://arxiv.org/pdf/2410.18071)**
+💡 **[Summary](2410.18071/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.18071)**
 
 ### Improve Vision Language Model Chain-of-thought Reasoning
 
-**Relevance:** This paper investigates how to improve the chain-of-thought reasoning capabilities of vision language models (VLMs) through prompt engineering techniques. It highlights the limitations of traditional training methods and proposes a two-fold approach: enriching training data with distilled rationales and applying reinforcement learning to refine reasoning quality. This directly addresses the topic of prompt engineering by exploring how carefully designed prompts can enhance VLM's ability to break down complex problems and generate step-by-step reasoning processes.
+**Relevance:** This paper focuses on improving the chain-of-thought (CoT) reasoning capabilities of vision language models by utilizing prompt engineering techniques. It introduces methods for enriching training data with rationales and applying reinforcement learning to refine the model's reasoning abilities, leading to more interpretable and trustworthy AI models.
 
-💡 **[Summary](2410.16198.html)** 📄 **[Full paper](https://arxiv.org/pdf/2410.16198)**
+💡 **[Summary](2410.16198/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.16198)**
 
 ## Human-in-the-loop Machine Learning
 
 ### Aligning Large Language Models via Self-Steering Optimization
 
-**Relevance:** This paper introduces Self-Steering Optimization (SSO), a human-in-the-loop technique for aligning large language models. SSO autonomously generates preference signals based on predefined principles, eliminating the need for manual annotation. This approach allows for efficient and effective alignment by incorporating human-defined preferences into the training process without requiring direct human intervention. This directly aligns with the concept of Human-in-the-loop Machine Learning by proposing a method for incorporating human feedback into the optimization process.
+**Relevance:** This paper proposes a method for automated alignment of LLMs that utilizes self-steering optimization, eliminating the need for manual annotation. It leverages human-like preference signals during training to improve model performance without relying on explicit human feedback, demonstrating a novel approach to human-in-the-loop learning.
 
-💡 **[Summary](2410.17131.html)** 📄 **[Full paper](https://arxiv.org/pdf/2410.17131)**
+💡 **[Summary](2410.17131/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.17131)**
 
-## Generative AI for UI Design and Engineering
+### MIA-DPO: Multi-Image Augmented Direct Preference Optimization For Large Vision-Language Models
 
-### Lightweight Neural App Control
+**Relevance:** This paper introduces a new approach for visual preference alignment in large vision-language models that effectively handles multi-image inputs. It utilizes a multi-image augmentation technique to mitigate the scarcity of training data and leverages attention-aware selection to construct chosen/rejected pairs, incorporating human preferences into the learning process.
 
-**Relevance:** This paper focuses on using AI to control mobile applications through natural language instructions. It proposes LiMAC, a lightweight multi-modal app control system that generates precise actions based on textual goals and visual observations of the app's user interface. This system demonstrates the potential of generative AI in automating UI interactions and enhancing user experiences. While not directly about UI design, LiMAC's approach of using AI to control and understand UI elements has implications for future generative UI design tools.
-
-💡 **[Summary](2410.17883.html)** 📄 **[Full paper](https://arxiv.org/pdf/2410.17883)**
+💡 **[Summary](2410.17637/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.17637)**
 
 ## Techniques for Explaining AI behavior
 
-### Mitigating Object Hallucination via Concentric Causal Attention
+### Math Neurosurgery: Isolating Language Models' Math Reasoning Abilities Using Only Forward Passes
 
-**Relevance:** This paper explores the issue of object hallucination in Large Vision Language Models (LVLMs) and proposes a solution to improve their transparency and explainability. It analyzes the root cause of hallucination, identifies the role of positional encoding, and introduces Concentric Causal Attention (CCA) to mitigate its impact. CCA enhances the model's ability to align visual cues with instructions, leading to more accurate and interpretable outputs. This directly addresses the topic of Explainable AI by improving the model's transparency and providing insights into its decision-making process.
+**Relevance:** This paper introduces a method for isolating math-specific parameters in LLMs using only forward passes, allowing for the identification and manipulation of these parameters to understand how LLMs encode mathematical reasoning. This research contributes to explainable AI by providing insights into the internal workings of LLMs and their specific abilities.
 
-💡 **[Summary](2410.15926.html)** 📄 **[Full paper](https://arxiv.org/pdf/2410.15926)**
+💡 **[Summary](2410.16930/)** 📄 **[Full paper](https://arxiv.org/pdf/2410.16930)**
 

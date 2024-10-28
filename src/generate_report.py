@@ -1,6 +1,7 @@
 import os
 import argparse
 import json
+import yaml
 import google.generativeai as genai
 import summarize_pdf
 from json_to_markdown import json_to_markdown
@@ -41,17 +42,74 @@ def add_summary_to_response(response_json, save_location):
     """
     for topic in response_json:
         for paper in topic["papers"]:
-            summary_path = summarize_pdf.main(paper["url"], save_location=save_location)
-            # Use relative path to the summary file
+            summary_path = summarize_pdf.get_summary_path(paper["url"], save_location)
+            summary_content = summarize_pdf.pdf_to_summary(paper["url"], summary_path)
             if summary_path is not None:
-                paper["summary"] = summary_path.replace(
+                # Use relative path to the summary file
+                paper["summary_path"] = summary_path.replace(
                     f"{save_location}/", ""
-                ).replace(".md", ".html")
+                )
+                paper["summary_content"] = summary_content
     return response_json
 
+def assess_relevance(response_json, topics, model):
+    """
+    Assess the relevance of each paper's summary to its topic description
+    and remove irrelevant papers.
+    """
+    dropped_papers = []
+    for topic in response_json:
+        topic_description = next((t['description'] for t in topics if t['topic'] == topic['topic']), None)
+        if not topic_description:
+            raise ValueError(f"Topic description not found for {topic['topic']}")
+        
+        relevant_papers = []
+        for paper in topic["papers"]:
+            summary_content = paper.get("summary_content", "")
+            relevance_score = is_relevant(summary_content, topic_description, model)
+            if relevance_score >= 0.5:
+                relevant_papers.append(paper)
+            else:
+                dropped_papers.append({
+                    "topic": topic['topic'],
+                    "paper_title": paper.get("title", "Unknown Title"),
+                    "relevance_score": relevance_score
+                })
+        
+        topic["papers"] = relevant_papers
+    
+    # Print dropped papers
+    for paper in dropped_papers:
+        print(f"Dropped paper '{paper['paper_title']}' from topic '{paper['topic']}' with relevance score: {paper['relevance_score']}")
+    
+    return response_json
+
+def is_relevant(summary, topic_description, model, threshold=0.5):
+    """
+    Check if the summary is relevant to the topic description using the AI model.
+    """
+    prompt = f"Is the following paper summary relevant to the topic description?\n\nSummary: {summary}\n\nTopic Description: {topic_description}\n\nAnswer with a relevance score between 0 and 1. No explanation is needed"
+    response = model.generate_content(prompt)
+    relevance_score = float(response.text.strip())
+    return relevance_score
+
+def write_summary_files(response_json, save_location):
+    """
+    Write the summary content to a file for each paper in the response json.
+    """
+    for topic in response_json:
+        for paper in topic["papers"]:
+            summary_path = paper.get("summary_path")
+            summary_content = paper.get("summary_content")
+            if summary_path is not None and summary_content is not None:
+                # Write the summary content to a file
+                with open(os.path.join(save_location, summary_path), "w") as file:
+                    file.write(summary_content)
+                # Print out which paper's summary has been saved to a file
+                print(f"Saved a summary of the paper {paper['title']} to {summary_path}")
 
 def inflate_prompt(
-    prompt_template_path, paper_data_path, topics_path="prompts/_topics.txt"
+    prompt_template_path, paper_data_path, topics_path="prompts/_topics.yaml"
 ):
     """
     Generates a prompt by replacing placeholders in a template with actual data.
@@ -59,21 +117,28 @@ def inflate_prompt(
     Args:
         prompt_template_path (str): The file path to the prompt template.
         paper_data_path (str): The file path to the paper data.
-        topics_path (str, optional): The file path to the topics data. Defaults to "prompts/_topics.txt".
+        topics_path (str, optional): The file path to the topics data. Defaults to "prompts/_topics.yaml".
 
     Returns:
         str: The generated prompt with placeholders replaced by actual data.
     """
     prompt_template = read_file(prompt_template_path)
     paper_data = read_file(paper_data_path)
-    topics = read_file(topics_path)
+    
+    # Read topics from YAML file
+    with open(topics_path, 'r') as file:
+        topics = yaml.safe_load(file)
+    
+    # Convert topics to a string format suitable for the prompt
+    topics_str = "\n".join([f"{index + 1}. {topic['topic']}\n{topic['description']}" for index, topic in enumerate(topics)])
+    
     prompt = prompt_template.replace("{paper_data}", paper_data).replace(
-        "{topics}", topics
+        "{topics}", topics_str
     )
-    return prompt
+    return prompt, topics
 
 
-def generate_report(model, prompt, date_string, skip_summary=False):
+def generate_report(model, prompt, topics, date_string, skip_summary=False):
     # generate paper recommendations in json format
     response = model.generate_content(prompt)
     response_json = parse_model_response(response)
@@ -84,6 +149,9 @@ def generate_report(model, prompt, date_string, skip_summary=False):
         response_json = add_summary_to_response(
             response_json, save_location=summary_save_location
         )
+        # assess relevance based on paper summaries and drop less relevant papers
+        response_json = assess_relevance(response_json, topics, model)
+        write_summary_files(response_json, summary_save_location)
     
     # convert json to markdown
     markdown_content = json_to_markdown(response_json, date_string)
@@ -140,8 +208,8 @@ def main():
     genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
-    prompt = inflate_prompt(prompt_template_path, args.paper_data_path)
-    report_content = generate_report(model, prompt, date_string, skip_summary=args.skip_summary)
+    prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
+    report_content = generate_report(model, prompt, topics, date_string, skip_summary=args.skip_summary)
 
     write_file(args.report_path, report_content)
     print(f"Report generated and saved to {args.report_path}")

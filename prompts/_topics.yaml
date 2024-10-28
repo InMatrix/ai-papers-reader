@@ -1,0 +1,42 @@
+- topic: Generative AI for Assisting Software Developers
+  description: |
+    Generative AI, particularly Large Language Models (LLMs), is increasingly being used to assist software developers in various tasks. Some examples include:
+    - Code completion and generation: Tools like GitHub Copilot use LLMs to suggest code snippets, complete functions, or even generate entire code blocks based on natural language descriptions.
+    - Bug detection and fixing: AI systems can analyze code to identify potential bugs, suggest fixes, or even automatically repair simple issues.
+    - Documentation generation: LLMs can help create or improve code documentation by generating summaries, explaining complex functions, or writing API documentation.
+    - Code refactoring: AI can suggest ways to improve code structure, readability, and efficiency.
+
+- topic: AI Agents
+  description: |
+    AI Agent research is the field studying autonomous software systems that can perceive their environment, reason about tasks, plan actions, and execute them using available tools and resources. These agents typically combine large language models (serving as their "brain") with capabilities like memory, tool use, and planning to accomplish user-defined goals. The field focuses on creating agents that can:
+    - Break complex tasks into manageable steps
+    - Use reasoning to make decisions and solve problems
+    - Learn from experience and adapt strategies
+    - Interact with digital tools and environments
+    - Work independently or collaborate with other agents
+    - Maintain safety and alignment with human values
+
+- topic: Prompt Engineering Techniques
+  description: |
+    Prompt engineering involves crafting input prompts to elicit better responses from AI models. Some techniques include:
+    - Chain-of-thought prompting: Encouraging the model to break down complex problems into steps, improving reasoning capabilities.
+    - Few-shot learning: Providing a few examples in the prompt to guide the model's behavior for specific tasks.
+    - Role-playing: Assigning a specific role or persona to the AI to influence its response style and content.
+    - Instruction fine-tuning: Training models on instruction-following datasets to improve their ability to understand and execute specific commands.
+
+- topic: Human-in-the-loop Machine Learning
+  description: |
+    This approach incorporates human feedback into the machine learning process. Examples include:
+    - Active learning: The model identifies uncertain or difficult cases and requests human input to improve its performance.
+    - Reinforcement learning from human feedback: Using human preferences to train reward models, which then guide the AI's behavior.
+    - Interactive labeling: Humans provide labels or corrections for model outputs, which are then used to fine-tune the model.
+    - Collaborative filtering: Combining human expertise with AI recommendations in systems like content moderation.
+
+- topic: Techniques for Explaining AI behavior
+  description: |
+    Explainable AI (XAI) aims to make AI decision-making processes more transparent and interpretable. Some techniques include:
+    - LIME (Local Interpretable Model-agnostic Explanations): Providing local explanations for individual predictions by perturbing input features.
+    - SHAP (SHapley Additive exPlanations): Calculating feature importance based on game theory concepts.
+    - Attention visualization: In models like transformers, visualizing attention weights to show which parts of the input the model focuses on.
+    - Counterfactual explanations: Showing how changes in input would affect the output, helping users understand decision boundaries.
+    - Rule extraction: Deriving human-readable rules from complex models to approximate their behavior.
