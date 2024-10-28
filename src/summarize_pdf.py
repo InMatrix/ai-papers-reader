@@ -122,7 +122,7 @@ def add_front_matter(summary, summary_path):
     title = title_line.strip('#* ')
     
     # Generate the permalink based on the summary file's path
-    permalink = summary_path.replace(".md", "").replace("docs/","")
+    permalink = summary_path.replace(".md", "/").replace("docs/","")
     
     front_matter = f"---\nlayout: default\ntitle: \'{title}\'\npermalink: {permalink}\n---\n"
     return front_matter + summary
