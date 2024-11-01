@@ -32,7 +32,7 @@
     - Interactive labeling: Humans provide labels or corrections for model outputs, which are then used to fine-tune the model.
     - Collaborative filtering: Combining human expertise with AI recommendations in systems like content moderation.
 
-- topic: Techniques for Explaining AI behavior
+- topic: Techniques for Explaining AI Behavior
   description: |
     Explainable AI (XAI) aims to make AI decision-making processes more transparent and interpretable. Some techniques include:
     - LIME (Local Interpretable Model-agnostic Explanations): Providing local explanations for individual predictions by perturbing input features.
