@@ -15,10 +15,11 @@ Requirements:
 - Python 3.7+
 - google-generativeai library
 - requests library
+- frontmatter library
 
 Usage:
 1. Install required libraries:
-   pip install google-generativeai requests
+   pip install google-generativeai requests frontmatter
 
 2. Set your Google API key in the script or as an environment variable:
    export GOOGLE_API_KEY='your_google_api_key_here'
@@ -35,6 +36,8 @@ import argparse
 import requests
 import tempfile
 import google.generativeai as genai
+import frontmatter
+from io import StringIO
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
@@ -107,7 +110,7 @@ def summarize_pdf(pdf_content):
 
 def add_front_matter(summary, summary_path):
     """
-    Adds front matter to the summary.
+    Adds front matter to the summary using the frontmatter package.
 
     Args:
     summary (str): The summary to which front matter will be added.
@@ -124,8 +127,19 @@ def add_front_matter(summary, summary_path):
     # Generate the permalink based on the summary file's path
     permalink = summary_path.replace(".md", "/").replace("docs/","")
     
-    front_matter = f"---\nlayout: default\ntitle: \'{title}\'\npermalink: {permalink}\n---\n"
-    return front_matter + summary
+    # Create a front matter dictionary
+    front_matter_dict = {
+        'layout': 'default',
+        'title': title,
+        'permalink': permalink
+    }
+
+    # Create a frontmatter post object
+    post = frontmatter.Post(summary)
+    post.metadata = front_matter_dict
+    
+    # Convert the post object to a string with front matter
+    return frontmatter.dumps(post)
 
 def save_summary(summary, output_file):
     """
