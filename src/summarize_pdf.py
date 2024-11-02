@@ -37,6 +37,7 @@ import requests
 import tempfile
 import google.generativeai as genai
 import frontmatter
+from io import StringIO
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
@@ -122,6 +123,9 @@ def add_front_matter(summary, summary_path):
     title_line = summary.split('\n', 1)[0]
     # Remove all the leading or trailing '#', '*' and whitespace
     title = title_line.strip('#* ')
+    
+    # Replace colons in the title with the HTML entity &#58;
+    title = title.replace(':', '&#58;')
     
     # Generate the permalink based on the summary file's path
     permalink = summary_path.replace(".md", "/").replace("docs/","")
