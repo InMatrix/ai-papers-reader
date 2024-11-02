@@ -37,7 +37,6 @@ import requests
 import tempfile
 import google.generativeai as genai
 import frontmatter
-from io import StringIO
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
