@@ -123,6 +123,9 @@ def add_front_matter(summary, summary_path):
     # Remove all the leading or trailing '#', '*' and whitespace
     title = title_line.strip('#* ')
     
+    # Replace colons in the title with the HTML entity &#58;
+    title = title.replace(':', '&#58;')
+    
     # Generate the permalink based on the summary file's path
     permalink = summary_path.replace(".md", "/").replace("docs/","")
     
