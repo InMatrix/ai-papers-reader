@@ -73,12 +73,30 @@ layout: default
   .hidden {
     display: none !important;
   }
+
+  #paper-links {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+  }
+
+  #paper-links a {
+    text-decoration: none;
+    color: #0366d6;
+  }
+
+  #paper-links a:hover {
+    text-decoration: underline;
+  }
 </style>
   
   
 </head>
 <h1>{{ page.title }}</h1>
-<p>📄 <a href="{{ page.pdf_url}}">Full Paper</a></p>
+<div id="paper-links">
+  <p>📄 <a href="{{ page.pdf_url}}">Full Paper</a></p>
+  <p>💬 <a href="#paper-chat" id="ask-link">Ask</a></p>
+</div>
 
 {{content}}
 
@@ -86,11 +104,11 @@ layout: default
   <small>tags: <em>{{ page.tags | join: "</em> - <em>" }}</em></small>
 {% endif %}
 
-<div id="paper-chat">
+<div id="paper-chat" class="hidden">
   <h2>Chat about this paper</h2>
   <div id="chat-container">
     <div id="api-key-notice">
-      <p>To chat about this paper, you'll need a Gemini API key from Google AI Studio.</p>
+      <p>To chat about this paper, you'll need a free Gemini API key from <a href="https://aistudio.google.com/">Google AI Studio</a>.</p>
       <button id="setup-api-key">Set up API Key</button>
       <p class="info-text">Your API key will be stored securely in your browser's local storage.</p>
     </div>

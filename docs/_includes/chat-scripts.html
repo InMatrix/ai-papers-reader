@@ -4,7 +4,25 @@
     
     let chat;
     const pdfUrl = "{{ page.pdf_url }}";
-    
+    let pdfProcessed = false;
+
+    async function handleAskClick(event) {
+      event.preventDefault();
+      // Show the chat section
+      document.getElementById('paper-chat').classList.remove('hidden');
+      // Scroll to chat section
+      document.getElementById('paper-chat').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+
+      // If we haven't processed the PDF yet and have an API key, do it now
+      const apiKey = localStorage.getItem("GEMINI_API_KEY");
+      if (apiKey && !pdfProcessed) {
+        await initializeWithApiKey(apiKey);
+      }
+    }
+
     async function promptForApiKey() {
       const apiKey = prompt("Please enter your Gemini API key:");
       if (apiKey) {
@@ -17,8 +35,10 @@
 
     async function initializeWithApiKey(apiKey) {
       try {
+        if (pdfProcessed) return; // Don't process again if already done
+        
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         displayMessage("System", "Initializing chat and processing PDF...");
         const pdfData = await downloadAndProcessPDF();
@@ -38,6 +58,7 @@
         document.getElementById("api-key-notice").classList.add("hidden");
         
         displayMessage("System", "Ready! You can now ask questions about the paper.");
+        pdfProcessed = true;
       } catch (error) {
         console.error("Chat initialization error:", error);
         displayMessage("Error", "Failed to initialize chat: " + error.message);
@@ -59,16 +80,23 @@
       const input = document.getElementById("user-input");
       const message = input.value.trim();
       if (!message) return;
-    
+
       displayMessage("You", message);
       input.value = "";
-    
+
       try {
         const result = await chat.sendMessageStream(message);
+        // Create a new message container for the system response
+        const messages = document.getElementById("chat-messages");
+        const systemDiv = document.createElement("div");
+        systemDiv.className = "message system-message";
+        messages.appendChild(systemDiv);
+
         let fullResponse = "";
         for await (const chunk of result.stream) {
           fullResponse += chunk.text();
-          updateModelResponse(fullResponse);
+          // Update only the system message container
+          systemDiv.innerHTML = `<strong>System:</strong><br>${marked.parse(fullResponse)}`;
         }
       } catch (error) {
         displayMessage("Error", error.message);
@@ -81,16 +109,6 @@
       div.innerHTML = `<strong>${sender}:</strong> ${marked.parse(message)}`;
       messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
-    }
-    
-    function updateModelResponse(response) {
-      const messages = document.getElementById("chat-messages");
-      let modelResponse = messages.lastElementChild;
-      if (!modelResponse?.querySelector("strong")?.textContent.includes("Model")) {
-        modelResponse = document.createElement("div");
-        messages.appendChild(modelResponse);
-      }
-      modelResponse.innerHTML = `<strong>Model:</strong> ${marked.parse(response)}`;
     }
 
     async function downloadAndProcessPDF() {
@@ -127,6 +145,7 @@
     
     window.onload = () => {
       // Set up event listeners
+      document.getElementById("ask-link").addEventListener("click", handleAskClick);
       document.getElementById("setup-api-key").addEventListener("click", promptForApiKey);
       document.getElementById("send-button").addEventListener("click", sendMessage);
       document.getElementById("user-input").addEventListener("keypress", (e) => {
@@ -134,6 +153,7 @@
       });
       document.getElementById("clear-button").addEventListener("click", () => {
         document.getElementById("chat-messages").innerHTML = "";
+        pdfProcessed = false;
         initChat();
       });
 
