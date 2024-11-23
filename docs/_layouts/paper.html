@@ -50,7 +50,30 @@ layout: default
   button:hover {
     background: #0255b3;
   }
-  </style>
+
+  #api-key-notice {
+    text-align: center;
+    padding: 2em;
+    background: #f6f8fa;
+    border-radius: 8px;
+    margin-bottom: 1em;
+  }
+
+  #api-key-notice p {
+    margin-bottom: 1em;
+    color: #24292e;
+  }
+
+  #api-key-notice .info-text {
+    font-size: 0.9em;
+    color: #586069;
+    margin-top: 0.5em;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+</style>
   
   
 </head>
@@ -66,11 +89,18 @@ layout: default
 <div id="paper-chat">
   <h2>Chat about this paper</h2>
   <div id="chat-container">
-    <div id="chat-messages"></div>
-    <div id="chat-input">
-      <input type="text" id="user-input" placeholder="Ask a question about this paper...">
-      <button id="send-button">Send</button>
-      <button id="clear-button">Clear Chat</button>
+    <div id="api-key-notice">
+      <p>To chat about this paper, you'll need a Gemini API key from Google AI Studio.</p>
+      <button id="setup-api-key">Set up API Key</button>
+      <p class="info-text">Your API key will be stored securely in your browser's local storage.</p>
+    </div>
+    <div id="chat-interface" class="hidden">
+      <div id="chat-messages"></div>
+      <div id="chat-input">
+        <input type="text" id="user-input" placeholder="Ask a question about this paper...">
+        <button id="send-button">Send</button>
+        <button id="clear-button">Clear Chat</button>
+      </div>
     </div>
   </div>
 </div>

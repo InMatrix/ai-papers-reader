@@ -5,22 +5,24 @@
     let chat;
     const pdfUrl = "{{ page.pdf_url }}";
     
-    async function initChat() {
-      try {
-        const apiKey = localStorage.getItem("GEMINI_API_KEY") || prompt("Please enter your Gemini API key:");
-        if (!apiKey) {
-          throw new Error("API key is required");
-        }
-        
+    async function promptForApiKey() {
+      const apiKey = prompt("Please enter your Gemini API key:");
+      if (apiKey) {
         localStorage.setItem("GEMINI_API_KEY", apiKey);
+        await initializeWithApiKey(apiKey);
+      } else {
+        displayMessage("Error", "API key is required to continue.");
+      }
+    }
+
+    async function initializeWithApiKey(apiKey) {
+      try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Download and process PDF first
-        displayMessage("System", "Downloading and processing PDF...");
+        displayMessage("System", "Initializing chat and processing PDF...");
         const pdfData = await downloadAndProcessPDF();
         
-        // Initialize chat with PDF context
         chat = model.startChat({
           history: [{
             role: "user",
@@ -31,13 +33,28 @@
           }]
         });
         
-        displayMessage("System", "Chat initialized. You can ask questions about the paper.");
+        // Show chat interface and hide API notice
+        document.getElementById("chat-interface").classList.remove("hidden");
+        document.getElementById("api-key-notice").classList.add("hidden");
+        
+        displayMessage("System", "Ready! You can now ask questions about the paper.");
       } catch (error) {
         console.error("Chat initialization error:", error);
         displayMessage("Error", "Failed to initialize chat: " + error.message);
+        // Show API notice again in case of error
+        document.getElementById("api-key-notice").classList.remove("hidden");
+        document.getElementById("chat-interface").classList.add("hidden");
       }
     }
     
+    async function initChat() {
+      const apiKey = localStorage.getItem("GEMINI_API_KEY");
+      if (apiKey) {
+        await initializeWithApiKey(apiKey);
+      }
+      // Otherwise, the API key notice is already visible by default
+    }
+
     async function sendMessage() {
       const input = document.getElementById("user-input");
       const message = input.value.trim();
@@ -109,7 +126,8 @@
     }
     
     window.onload = () => {
-      initChat();
+      // Set up event listeners
+      document.getElementById("setup-api-key").addEventListener("click", promptForApiKey);
       document.getElementById("send-button").addEventListener("click", sendMessage);
       document.getElementById("user-input").addEventListener("keypress", (e) => {
         if (e.key === "Enter") sendMessage();
@@ -118,5 +136,8 @@
         document.getElementById("chat-messages").innerHTML = "";
         initChat();
       });
+
+      // Initialize chat (will check for existing API key)
+      initChat();
     };
 </script>
