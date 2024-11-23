@@ -1,96 +1,115 @@
 ---
 layout: default
 ---
+
 <head>
   <!-- other head elements -->
   {% include chat-scripts.html %}
 
-<style>
-  #paper-chat {
-    margin-top: 2em;
-    border-top: 1px solid #eee;
-    padding-top: 1em;
-  }
-  
-  #chat-container {
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  #chat-messages {
-    height: 400px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 1em;
-    margin-bottom: 1em;
-  }
-  
-  #chat-input {
-    display: flex;
-    gap: 0.5em;
-  }
-  
-  #user-input {
-    flex: 1;
-    padding: 0.5em;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  
-  button {
-    padding: 0.5em 1em;
-    border: none;
-    border-radius: 4px;
-    background: #0366d6;
-    color: white;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background: #0255b3;
-  }
+  <style>
+    #paper-chat {
+      margin-top: 2em;
+      border-top: 1px solid #eee;
+      padding-top: 1em;
+    }
 
-  #api-key-notice {
-    text-align: center;
-    padding: 2em;
-    background: #f6f8fa;
-    border-radius: 8px;
-    margin-bottom: 1em;
-  }
+    #chat-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
 
-  #api-key-notice p {
-    margin-bottom: 1em;
-    color: #24292e;
-  }
+    #chat-messages {
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 1em;
+      margin-bottom: 1em;
+    }
 
-  #api-key-notice .info-text {
-    font-size: 0.9em;
-    color: #586069;
-    margin-top: 0.5em;
-  }
+    #chat-input {
+      display: flex;
+      gap: 0.5em;
+    }
 
-  .hidden {
-    display: none !important;
-  }
+    #user-input {
+      flex: 1;
+      padding: 0.5em;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
 
-  #paper-links {
-    display: flex;
-    gap: 1em;
-    align-items: center;
-  }
+    button {
+      padding: 0.5em 1em;
+      border: none;
+      border-radius: 4px;
+      background: #0366d6;
+      color: white;
+      cursor: pointer;
+    }
 
-  #paper-links a {
-    text-decoration: none;
-    color: #0366d6;
-  }
+    button:hover {
+      background: #0255b3;
+    }
 
-  #paper-links a:hover {
-    text-decoration: underline;
-  }
-</style>
-  
-  
+    #api-key-notice {
+      text-align: center;
+      padding: 2em;
+      background: #f6f8fa;
+      border-radius: 8px;
+      margin-bottom: 1em;
+    }
+
+    #api-key-notice p {
+      margin-bottom: 1em;
+      color: #24292e;
+    }
+
+    #api-key-notice .info-text {
+      font-size: 0.9em;
+      color: #586069;
+      margin-top: 0.5em;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #paper-links {
+      display: flex;
+      gap: 1em;
+      align-items: center;
+    }
+
+    #paper-links a {
+      text-decoration: none;
+      color: #0366d6;
+    }
+
+    #paper-links a:hover {
+      text-decoration: underline;
+    }
+
+    @keyframes thinking {
+      0% {
+        opacity: 0.5;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.5;
+      }
+    }
+
+    .thinking {
+      animation: thinking 1.5s ease-in-out infinite;
+    }
+  </style>
+
+
 </head>
 <h1>{{ page.title }}</h1>
 <div id="paper-links">
@@ -101,14 +120,15 @@ layout: default
 {{content}}
 
 {% if page.tags %}
-  <small>tags: <em>{{ page.tags | join: "</em> - <em>" }}</em></small>
+<small>tags: <em>{{ page.tags | join: "</em> - <em>" }}</em></small>
 {% endif %}
 
 <div id="paper-chat" class="hidden">
   <h2>Chat about this paper</h2>
   <div id="chat-container">
     <div id="api-key-notice">
-      <p>To chat about this paper, you'll need a free Gemini API key from <a href="https://aistudio.google.com/">Google AI Studio</a>.</p>
+      <p>To chat about this paper, you'll need a free Gemini API key from <a href="https://aistudio.google.com/">Google
+          AI Studio</a>.</p>
       <button id="setup-api-key">Set up API Key</button>
       <p class="info-text">Your API key will be stored securely in your browser's local storage.</p>
     </div>

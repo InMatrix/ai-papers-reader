@@ -85,9 +85,19 @@
       input.value = "";
 
       try {
-        const result = await chat.sendMessageStream(message);
-        // Create a new message container for the system response
+        // Show thinking indicator
         const messages = document.getElementById("chat-messages");
+        const thinkingDiv = document.createElement("div");
+        thinkingDiv.className = "message system-message thinking";
+        thinkingDiv.innerHTML = `<strong>System:</strong><br>🤔 💭 Thinking...`;
+        messages.appendChild(thinkingDiv);
+        messages.scrollTop = messages.scrollHeight;
+
+        const result = await chat.sendMessageStream(message);
+        // Remove thinking indicator
+        thinkingDiv.remove();
+        
+        // Create a new message container for the system response
         const systemDiv = document.createElement("div");
         systemDiv.className = "message system-message";
         messages.appendChild(systemDiv);
@@ -97,6 +107,7 @@
           fullResponse += chunk.text();
           // Update only the system message container
           systemDiv.innerHTML = `<strong>System:</strong><br>${marked.parse(fullResponse)}`;
+          messages.scrollTop = messages.scrollHeight;
         }
       } catch (error) {
         displayMessage("Error", error.message);
