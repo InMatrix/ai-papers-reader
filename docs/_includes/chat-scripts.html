@@ -3,25 +3,35 @@
     import { marked } from "https://esm.run/marked";
     
     let chat;
-    const pdfUrl = "https://arxiv.org/pdf/2411.02462";
+    const pdfUrl = "{{ page.pdf_url }}";
     
     async function initChat() {
       try {
         const apiKey = localStorage.getItem("GEMINI_API_KEY") || prompt("Please enter your Gemini API key:");
-        if (apiKey) {
-          localStorage.setItem("GEMINI_API_KEY", apiKey);
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-          chat = model.startChat({
-            history: [{
-              role: "user",
-              parts: [{ 
-                text: "This is a discussion about the paper at https://arxiv.org/pdf/2411.02462. Help users understand and analyze this paper."
-              }]
-            }]
-          });
-          displayMessage("System", "Chat initialized. You can ask questions about the paper.");
+        if (!apiKey) {
+          throw new Error("API key is required");
         }
+        
+        localStorage.setItem("GEMINI_API_KEY", apiKey);
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // Download and process PDF first
+        displayMessage("System", "Downloading and processing PDF...");
+        const pdfData = await downloadAndProcessPDF();
+        
+        // Initialize chat with PDF context
+        chat = model.startChat({
+          history: [{
+            role: "user",
+            parts: [
+              { text: "This is a discussion about the paper at {{ page.pdf_url }}. Help users understand and analyze this paper." },
+              pdfData
+            ]
+          }]
+        });
+        
+        displayMessage("System", "Chat initialized. You can ask questions about the paper.");
       } catch (error) {
         console.error("Chat initialization error:", error);
         displayMessage("Error", "Failed to initialize chat: " + error.message);
@@ -64,6 +74,38 @@
         messages.appendChild(modelResponse);
       }
       modelResponse.innerHTML = `<strong>Model:</strong> ${marked.parse(response)}`;
+    }
+
+    async function downloadAndProcessPDF() {
+      try {
+        const response = await fetch(pdfUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        return {
+          inlineData: {
+            data: await blobToBase64(blob),
+            mimeType: "application/pdf"
+          }
+        };
+      } catch (error) {
+        console.error('Error processing PDF:', error);
+        throw error;
+      }
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     }
     
     window.onload = () => {
