@@ -1,7 +1,59 @@
 ---
 layout: default
 ---
+<head>
+  <!-- other head elements -->
+  {% include chat-scripts.html %}
 
+<style>
+  #paper-chat {
+    margin-top: 2em;
+    border-top: 1px solid #eee;
+    padding-top: 1em;
+  }
+  
+  #chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  #chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1em;
+    margin-bottom: 1em;
+  }
+  
+  #chat-input {
+    display: flex;
+    gap: 0.5em;
+  }
+  
+  #user-input {
+    flex: 1;
+    padding: 0.5em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  button {
+    padding: 0.5em 1em;
+    border: none;
+    border-radius: 4px;
+    background: #0366d6;
+    color: white;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background: #0255b3;
+  }
+  </style>
+  
+  
+</head>
 <h1>{{ page.title }}</h1>
 <p>📄 <a href="{{ page.pdf_url}}">Full Paper</a></p>
 
@@ -10,3 +62,15 @@ layout: default
 {% if page.tags %}
   <small>tags: <em>{{ page.tags | join: "</em> - <em>" }}</em></small>
 {% endif %}
+
+<div id="paper-chat">
+  <h2>Chat about this paper</h2>
+  <div id="chat-container">
+    <div id="chat-messages"></div>
+    <div id="chat-input">
+      <input type="text" id="user-input" placeholder="Ask a question about this paper...">
+      <button id="send-button">Send</button>
+      <button id="clear-button">Clear Chat</button>
+    </div>
+  </div>
+</div>

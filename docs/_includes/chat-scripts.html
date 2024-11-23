@@ -1,0 +1,80 @@
+<script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+    import { marked } from "https://esm.run/marked";
+    
+    let chat;
+    const pdfUrl = "https://arxiv.org/pdf/2411.02462";
+    
+    async function initChat() {
+      try {
+        const apiKey = localStorage.getItem("GEMINI_API_KEY") || prompt("Please enter your Gemini API key:");
+        if (apiKey) {
+          localStorage.setItem("GEMINI_API_KEY", apiKey);
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          chat = model.startChat({
+            history: [{
+              role: "user",
+              parts: [{ 
+                text: "This is a discussion about the paper at https://arxiv.org/pdf/2411.02462. Help users understand and analyze this paper."
+              }]
+            }]
+          });
+          displayMessage("System", "Chat initialized. You can ask questions about the paper.");
+        }
+      } catch (error) {
+        console.error("Chat initialization error:", error);
+        displayMessage("Error", "Failed to initialize chat: " + error.message);
+      }
+    }
+    
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (!message) return;
+    
+      displayMessage("You", message);
+      input.value = "";
+    
+      try {
+        const result = await chat.sendMessageStream(message);
+        let fullResponse = "";
+        for await (const chunk of result.stream) {
+          fullResponse += chunk.text();
+          updateModelResponse(fullResponse);
+        }
+      } catch (error) {
+        displayMessage("Error", error.message);
+      }
+    }
+    
+    function displayMessage(sender, message) {
+      const messages = document.getElementById("chat-messages");
+      const div = document.createElement("div");
+      div.innerHTML = `<strong>${sender}:</strong> ${marked.parse(message)}`;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+    
+    function updateModelResponse(response) {
+      const messages = document.getElementById("chat-messages");
+      let modelResponse = messages.lastElementChild;
+      if (!modelResponse?.querySelector("strong")?.textContent.includes("Model")) {
+        modelResponse = document.createElement("div");
+        messages.appendChild(modelResponse);
+      }
+      modelResponse.innerHTML = `<strong>Model:</strong> ${marked.parse(response)}`;
+    }
+    
+    window.onload = () => {
+      initChat();
+      document.getElementById("send-button").addEventListener("click", sendMessage);
+      document.getElementById("user-input").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+      document.getElementById("clear-button").addEventListener("click", () => {
+        document.getElementById("chat-messages").innerHTML = "";
+        initChat();
+      });
+    };
+</script>
