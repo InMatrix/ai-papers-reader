@@ -1,0 +1,174 @@
+<script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+    import { marked } from "https://esm.run/marked";
+    
+    let chat;
+    const pdfUrl = "{{ page.pdf_url }}";
+    let pdfProcessed = false;
+
+    async function handleAskClick(event) {
+      event.preventDefault();
+      // Show the chat section
+      document.getElementById('paper-chat').classList.remove('hidden');
+      // Scroll to chat section
+      document.getElementById('paper-chat').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+
+      // If we haven't processed the PDF yet and have an API key, do it now
+      const apiKey = localStorage.getItem("GEMINI_API_KEY");
+      if (apiKey && !pdfProcessed) {
+        await initializeWithApiKey(apiKey);
+      }
+    }
+
+    async function promptForApiKey() {
+      const apiKey = prompt("Please enter your Gemini API key:");
+      if (apiKey) {
+        localStorage.setItem("GEMINI_API_KEY", apiKey);
+        await initializeWithApiKey(apiKey);
+      } else {
+        displayMessage("Error", "API key is required to continue.");
+      }
+    }
+
+    async function initializeWithApiKey(apiKey) {
+      try {
+        if (pdfProcessed) return; // Don't process again if already done
+        
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+        displayMessage("System", "Initializing chat and processing PDF...");
+        const pdfData = await downloadAndProcessPDF();
+        
+        chat = model.startChat({
+          history: [{
+            role: "user",
+            parts: [
+              { text: "This is a discussion about the paper at {{ page.pdf_url }}. Help users understand and analyze this paper." },
+              pdfData
+            ]
+          }]
+        });
+        
+        // Show chat interface and hide API notice
+        document.getElementById("chat-interface").classList.remove("hidden");
+        document.getElementById("api-key-notice").classList.add("hidden");
+        
+        displayMessage("System", "Ready! You can now ask questions about the paper.");
+        pdfProcessed = true;
+      } catch (error) {
+        console.error("Chat initialization error:", error);
+        displayMessage("Error", "Failed to initialize chat: " + error.message);
+        // Show API notice again in case of error
+        document.getElementById("api-key-notice").classList.remove("hidden");
+        document.getElementById("chat-interface").classList.add("hidden");
+      }
+    }
+    
+    async function initChat() {
+      const apiKey = localStorage.getItem("GEMINI_API_KEY");
+      if (apiKey) {
+        await initializeWithApiKey(apiKey);
+      }
+      // Otherwise, the API key notice is already visible by default
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      displayMessage("You", message);
+      input.value = "";
+
+      try {
+        // Show thinking indicator
+        const messages = document.getElementById("chat-messages");
+        const thinkingDiv = document.createElement("div");
+        thinkingDiv.className = "message system-message thinking";
+        thinkingDiv.innerHTML = `<strong>System:</strong><br>🤔 💭 Thinking...`;
+        messages.appendChild(thinkingDiv);
+        messages.scrollTop = messages.scrollHeight;
+
+        const result = await chat.sendMessageStream(message);
+        // Remove thinking indicator
+        thinkingDiv.remove();
+        
+        // Create a new message container for the system response
+        const systemDiv = document.createElement("div");
+        systemDiv.className = "message system-message";
+        messages.appendChild(systemDiv);
+
+        let fullResponse = "";
+        for await (const chunk of result.stream) {
+          fullResponse += chunk.text();
+          // Update only the system message container
+          systemDiv.innerHTML = `<strong>System:</strong><br>${marked.parse(fullResponse)}`;
+          messages.scrollTop = messages.scrollHeight;
+        }
+      } catch (error) {
+        displayMessage("Error", error.message);
+      }
+    }
+    
+    function displayMessage(sender, message) {
+      const messages = document.getElementById("chat-messages");
+      const div = document.createElement("div");
+      div.innerHTML = `<strong>${sender}:</strong> ${marked.parse(message)}`;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function downloadAndProcessPDF() {
+      try {
+        const response = await fetch(pdfUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        return {
+          inlineData: {
+            data: await blobToBase64(blob),
+            mimeType: "application/pdf"
+          }
+        };
+      } catch (error) {
+        console.error('Error processing PDF:', error);
+        throw error;
+      }
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    
+    window.onload = () => {
+      // Set up event listeners
+      document.getElementById("ask-link").addEventListener("click", handleAskClick);
+      document.getElementById("setup-api-key").addEventListener("click", promptForApiKey);
+      document.getElementById("send-button").addEventListener("click", sendMessage);
+      document.getElementById("user-input").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+      document.getElementById("clear-button").addEventListener("click", () => {
+        document.getElementById("chat-messages").innerHTML = "";
+        pdfProcessed = false;
+        initChat();
+      });
+
+      // Initialize chat (will check for existing API key)
+      initChat();
+    };
+</script>

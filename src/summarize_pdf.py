@@ -120,6 +120,8 @@ def add_front_matter(summary, summary_path):
     """
     # Extract the title from the first line of the summary
     title_line = summary.split('\n', 1)[0]
+
+    summary = summary.replace(title_line, '')
     # Remove all the leading or trailing '#', '*' and whitespace
     title = title_line.strip('#* ')
     
@@ -128,11 +130,16 @@ def add_front_matter(summary, summary_path):
     
     # Generate the permalink based on the summary file's path
     permalink = summary_path.replace(".md", "/").replace("docs/","")
+
+    # Extract the PDF URL from the permalink
+    # PDF URL pattern: https://arxiv.org/pdf/2409.02392
+    pdf_url = f"https://arxiv.org/pdf/{permalink.split('/')[-1]}"
     
     # Create a front matter dictionary
     front_matter_dict = {
         'layout': 'default',
         'title': title,
+        'pdf_url': pdf_url,
         'permalink': permalink
     }
 
