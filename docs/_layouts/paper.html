@@ -90,6 +90,23 @@ layout: default
       text-decoration: underline;
     }
 
+    #read-summary-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: #0366d6;
+      padding: 0;
+      font: inherit;
+    }
+
+    #read-summary-btn:hover {
+      text-decoration: underline;
+      background: none;
+    }
+
     @keyframes thinking {
       0% {
         opacity: 0.5;
@@ -109,19 +126,50 @@ layout: default
     }
   </style>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const readSummaryBtn = document.getElementById('read-summary-btn');
+      let isReading = false;
+      
+      readSummaryBtn.addEventListener('click', function() {
+        if (!isReading) {
+          // Get the paper summary (first paragraph after title)
+          const summary = document.querySelector('#paper-summary-content').textContent;
+          
+          // Create speech synthesis utterance
+          const utterance = new SpeechSynthesisUtterance(summary);
+          
+          // Start reading
+          isReading = true;
+          readSummaryBtn.innerHTML = 'Stop Reading';
+          window.speechSynthesis.speak(utterance);
+          
+          // When finished reading
+          utterance.onend = function() {
+            isReading = false;
+            readSummaryBtn.innerHTML = 'Read Summary';
+          };
+        } else {
+          // Stop reading
+          window.speechSynthesis.cancel();
+          isReading = false;
+          readSummaryBtn.innerHTML = 'Read Summary';
+        }
+      });
+    });
+  </script>
 
 </head>
 <h1>{{ page.title }}</h1>
 <div id="paper-links">
   <p>📄 <a href="{{ page.pdf_url}}">Full Paper</a></p>
+  <p>🔊 <button id="read-summary-btn">Read Summary</button></p>
   <p>💬 <a href="#paper-chat" id="ask-link">Ask</a></p>
 </div>
 
+<div id="paper-summary-content">
 {{content}}
-
-{% if page.tags %}
-<small>tags: <em>{{ page.tags | join: "</em> - <em>" }}</em></small>
-{% endif %}
+</div>
 
 <div id="paper-chat" class="hidden">
   <h2>Chat about this paper</h2>
