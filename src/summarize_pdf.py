@@ -37,6 +37,7 @@ import requests
 import tempfile
 import google.generativeai as genai
 import frontmatter
+import re
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
@@ -75,6 +76,21 @@ def get_summary_path(pdf_url, save_location):
     # Return the path to the summary file
     return f"{save_location}/{paper_id}.md"
 
+def clean_markdown_blocks(text):
+    """
+    Remove markdown code block markers from the text.
+
+    Args:
+    text (str): The text to clean.
+
+    Returns:
+    str: The text with markdown code block markers removed.
+    """
+    # Remove ```markdown at the start and ``` at the end if they exist
+    text = re.sub(r'^```markdown\s*\n', '', text)
+    text = re.sub(r'\n```\s*$', '', text)
+    return text
+
 def summarize_pdf(pdf_content):
     """
     Summarize the content of a PDF using the Gemini 1.5 Flash model.
@@ -105,7 +121,8 @@ def summarize_pdf(pdf_content):
     # Clean up the temporary file
     os.unlink(temp_pdf.name)
     
-    return response.text
+    # Clean the response text of markdown code block markers
+    return clean_markdown_blocks(response.text)
 
 def add_front_matter(summary, summary_path):
     """
@@ -133,11 +150,11 @@ def add_front_matter(summary, summary_path):
 
     # Extract the PDF URL from the permalink
     # PDF URL pattern: https://arxiv.org/pdf/2409.02392
-    pdf_url = f"https://arxiv.org/pdf/{permalink.split('/')[-1]}"
+    pdf_url = f"https://arxiv.org/pdf/{permalink.split('/')[-2]}"
     
     # Create a front matter dictionary
     front_matter_dict = {
-        'layout': 'default',
+        'layout': 'paper',
         'title': title,
         'pdf_url': pdf_url,
         'permalink': permalink
