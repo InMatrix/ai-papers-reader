@@ -206,7 +206,7 @@ def main():
         raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
     report_content = generate_report(model, prompt, topics, date_string, skip_summary=args.skip_summary)
