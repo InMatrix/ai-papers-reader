@@ -3,6 +3,7 @@
 # Regenerate reports for all the paper metadata files in the paper_data directory
 # Run this script from the root directory of the project
 # Example usage: bash src/regenerate_reports.sh
+# To generate the latest reports, run generate_report.py without parameters
 
 # Loop through each file in the paper_data directory
 for file in ./paper_data/*; do
