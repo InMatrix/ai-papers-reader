@@ -24,14 +24,27 @@ def parse_model_response(response):
         cleaned_response = response.text.strip()
         if cleaned_response.startswith("```json") and cleaned_response.endswith("```"):
             cleaned_response = cleaned_response[7:-3].strip()
-        # Remove newline characters
-        cleaned_response = cleaned_response.replace("\n", "")
+        
         # Parse the cleaned response as JSON
         response_json = json.loads(cleaned_response)
-    except json.JSONDecodeError:
-        # Print the response in json format
-        print(json.dumps(cleaned_response, indent=4))
-        raise ValueError("The response is not a valid JSON string")
+    except json.JSONDecodeError as e:
+        # Print detailed error information
+        print(f"JSON decode error: {str(e)}")
+        
+        # Print context around error position
+        error_pos = e.pos
+        start = max(0, error_pos - 40)
+        end = min(len(cleaned_response), error_pos + 40)
+        print(f"Context: ...{cleaned_response[start:error_pos]}>>>ERROR HERE>>>{cleaned_response[error_pos:end]}...")
+        
+        # Save the problematic response to a file for inspection
+        debug_file = "error_response.txt"
+        with open(debug_file, "w") as f:
+            f.write(cleaned_response)
+        print(f"Full response saved to '{debug_file}' for inspection")
+        
+        raise ValueError(f"The response is not a valid JSON string: {str(e)}")
+    
     return response_json
 
 
