@@ -1,0 +1,77 @@
+[
+  {
+    "topic": "Generative AI for Assisting Software Developers",
+    "papers": [
+      {
+        "title": "Can LLMs Generate High-Quality Test Cases for Algorithm Problems? TestCase-Eval: A Systematic Evaluation of Fault Coverage and Exposure",
+        "url": "https://arxiv.org/pdf/2506.12278",
+        "relevance": "This paper directly addresses a key area of generative AI for software development: test case generation. It introduces TestCase-Eval, a benchmark for evaluating LLMs in this task. It comprehensively assesses the ability of various LLMs to generate effective test cases for algorithm problems by evaluating fault coverage and exposure. This provides valuable insights for improving LLMs used in assisting developers with testing and debugging."
+      },
+      {
+        "title": "Treasure Hunt: Real-time Targeting of the Long Tail using Training-Time Markers",
+        "url": "https://arxiv.org/pdf/2506.14702",
+        "relevance": "This paper presents a technique for improving the performance of generative AI models on underrepresented use cases, such as code repair. It introduces a training protocol that allows users to control generation attributes and implicitly condition generations at inference time.  The method is especially useful for CodeRepair tasks, directly addressing the software development context, making it relevant to assisting software developers with specific, less common coding scenarios."
+      }
+    ]
+  },
+  {
+    "topic": "AI Agents",
+    "papers": [
+      {
+        "title": "OS-Harm: A Benchmark for Measuring Safety of Computer Use Agents",
+        "url": "https://arxiv.org/pdf/2506.14866",
+        "relevance": "This paper is highly relevant as it directly addresses the safety of AI agents that interact with computer systems through a GUI. It introduces OS-Harm, a benchmark for measuring potential harmful behaviors of such agents. This evaluation considers deliberate misuse, prompt injection attacks, and model misbehavior across various OS applications. Safety is a key concern for AI agents deployed in real-world environments, making this work crucial for developing trustworthy and reliable agents."
+      },
+      {
+        "title": "AgentSynth: Scalable Task Generation for Generalist Computer-Use Agents",
+        "url": "https://arxiv.org/pdf/2506.14205",
+        "relevance": "This paper proposes a method for automatically generating tasks and datasets for generalist computer-use agents. It introduces AgentSynth, a pipeline that leverages LLMs to create complex, long-horizon tasks. This addresses the challenge of training and evaluating AI agents that can interact with computer systems. The generated tasks can then be used to train AI agents for various purposes, thus improving their autonomy and general task completion capabilities."
+      },
+      {
+        "title": "Embodied Web Agents: Bridging Physical-Digital Realms for Integrated Agent Intelligence",
+        "url": "https://arxiv.org/pdf/2506.15677",
+        "relevance": "This paper introduces the concept of embodied web agents that can integrate information from both the physical and digital world. It develops a task environment and benchmark that requires agents to reason across physical and digital realms, such as cooking using online recipes. It helps to broaden the application and development of AI agents from just digital interactions to physical environments as well."
+      }
+    ]
+  },
+  {
+    "topic": "Prompt Engineering Techniques",
+    "papers": [
+      {
+        "title": "Universal Jailbreak Suffixes Are Strong Attention Hijackers",
+        "url": "https://arxiv.org/pdf/2506.12880",
+        "relevance": "This paper explores adversarial prompt engineering techniques, specifically focusing on universal jailbreak suffixes. It investigates how these suffixes can hijack the attention mechanism of LLMs to circumvent safety alignment. Understanding these attacks is crucial for developing prompt engineering strategies that are robust to adversarial inputs and can effectively guide LLMs towards desired behaviors. This work also provides insights to mitigate such attacks."
+      },
+      {
+        "title": "QFFT, Question-Free Fine-Tuning for Adaptive Reasoning",
+        "url": "https://arxiv.org/pdf/2506.12860",
+        "relevance": "While this is technically a fine-tuning technique, it plays on the format of the "prompt". The QFFT method enables models to leverage both Short and Long Chain-of-Thought reasoning patterns for a better answer. Essentially, the *absence* of an input question during training prompts the model to adaptively employ reasoning patterns and prioritizes concise responses. In the domain of prompt engineering, this work offers insights into how modifying the input format during training can influence the reasoning style and efficiency of LLMs."
+      }
+    ]
+  },
+  {
+    "topic": "Human-in-the-loop Machine Learning",
+    "papers": [
+      {
+        "title": "Reinforcement Learning with Verifiable Rewards Implicitly Incentivizes Correct Reasoning in Base LLMs",
+        "url": "https://arxiv.org/pdf/2506.14245",
+        "relevance": "This paper explores Reinforcement Learning with Verifiable Rewards (RLVR), a technique that incorporates human feedback signals. RLVR improves LLMs, but not in a typical way. The paper makes a key point that models trained under RLVR perform better compared to base models in terms of the quality of the reasoning behind the answer. RLVR provides a mechanism for humans to shape the reasoning process of AI models, indirectly improving reasoning abilities."
+      }
+    ]
+  },
+  {
+    "topic": "Techniques for Explaining AI Behavior",
+    "papers": [
+      {
+        "title": "Alignment Quality Index (AQI) : Beyond Refusals: AQI as an Intrinsic Alignment Diagnostic via Latent Geometry, Cluster Divergence, and Layer wise Pooled Representations",
+        "url": "https://arxiv.org/pdf/2506.13901",
+        "relevance": "This paper presents a method to assess LLM alignment by analyzing the separation of safe and unsafe activations in latent space. It introduces the Alignment Quality Index (AQI), which captures clustering quality to detect hidden misalignments and jailbreak risks. It reveals potential vulnerabilities of models and offers a robust tool for safety auditing by analyzing what is happening in latent space, rather than behavioral metrics alone."
+      },
+       {
+        "title": "Graph Counselor: Adaptive Graph Exploration via Multi-Agent Synergy to Enhance LLM Reasoning",
+        "url": "https://arxiv.org/pdf/2506.03939",
+        "relevance": "This paper presents a method for improving the reasoning capabilities of LLMs by using multiple agents to explore graph data. While the main focus is on reasoning, the Adaptive Graph Information Extraction Module allows us to better visualize and understand the information extraction strategies, as well as the information flow, within a graph database, therefore can be useful to understand why certain information is retrieved while some are missed."
+      }
+    ]
+  }
+]
