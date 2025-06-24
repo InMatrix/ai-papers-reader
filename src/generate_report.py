@@ -229,4 +229,27 @@ def main():
 
 
 if __name__ == "__main__":
+    """
+    Command-line Usage:
+
+    python generate_report.py [OPTIONS]
+
+    Options:
+      --paper_data_path PATH   Path to the paper data file. If not provided, the most recent file in the 'paper_data' directory will be used.
+      --report_path PATH       Path to save the generated report. If not provided, the report will be saved in 'docs/<date_string>/index.md'.
+      --skip_summary           Skip the summarization step. Use this flag to bypass generating summaries for papers.
+
+    Examples:
+      1. Generate a report using the most recent paper data file and default settings:
+         python generate_report.py
+
+      2. Generate a report for a specific paper data file:
+         python generate_report.py --paper_data_path paper_data/sample_papers_20231001.json
+
+      3. Generate a report and save it to a specific location:
+         python generate_report.py --paper_data_path paper_data/sample_papers_20231001.json --report_path docs/custom_report.md
+
+      4. Generate a report without summarizing papers:
+         python generate_report.py --skip_summary
+    """
     main()
