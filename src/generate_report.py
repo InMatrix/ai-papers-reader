@@ -2,6 +2,7 @@ import os
 import argparse
 import json
 import yaml
+import time
 import google.generativeai as genai
 import summarize_pdf
 from json_to_markdown import json_to_markdown
@@ -103,6 +104,8 @@ def is_relevant(summary, topic_description, model, threshold=0.5):
     """
     prompt = f"Is the following paper summary relevant to the topic description?\n\nSummary: {summary}\n\nTopic Description: {topic_description}\n\nAnswer with a relevance score between 0 and 1. No explanation is needed"
     response = model.generate_content(prompt)
+    # The Gemini free tier has a rate limit of 15 RPM
+    time.sleep(5)
     relevance_score = float(response.text.strip())
     return relevance_score
 

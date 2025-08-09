@@ -32,6 +32,6 @@ def test_inflate_prompt(setup_files):
     topics_string = "\n".join([f"{index + 1}. {topic['topic']}\n{topic['description']}" for index, topic in enumerate(topics)])
 
     expected_prompt = f"This is a prompt template with Sample paper data. and {topics_string}."
-    generated_prompt = inflate_prompt(str(prompt_template_path), str(paper_data_path), str(topics_path))
+    generated_prompt, _ = inflate_prompt(str(prompt_template_path), str(paper_data_path), str(topics_path))
 
     assert generated_prompt == expected_prompt
