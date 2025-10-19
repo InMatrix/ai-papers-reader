@@ -11,6 +11,7 @@ title: Reports of Latest AI Papers
 {% assign sorted_groups = grouped_by_month | sort: "name" | reverse %}
 
 {% assign current_month_group = sorted_groups | where: "name", current_month_key | first %}
+{% assign previous_year = nil %}
 {% if current_month_group %}
 <details open>
   <summary>{{ (current_month_group.name | append: "-01") | date: "%B %Y" }}</summary>
@@ -20,10 +21,15 @@ title: Reports of Latest AI Papers
   {% endfor %}
   </ul>
 </details>
+{% assign previous_year = current_month_group.name | slice: 0, 4 %}
 {% endif %}
 
 {% assign other_months = sorted_groups | where_exp: "month", "month.name != current_month_key" %}
 {% for month in other_months %}
+  {% assign current_year = month.name | slice: 0, 4 %}
+  {% if previous_year and previous_year != current_year %}
+    <hr>
+  {% endif %}
   <details>
     <summary>{{ (month.name | append: "-01") | date: "%B %Y" }}</summary>
     <ul>
@@ -32,4 +38,5 @@ title: Reports of Latest AI Papers
     {% endfor %}
     </ul>
   </details>
+  {% assign previous_year = current_year %}
 {% endfor %}
