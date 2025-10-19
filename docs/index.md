@@ -28,7 +28,7 @@ title: Reports of Latest AI Papers
 {% for month in other_months %}
   {% assign current_year = month.name | slice: 0, 4 %}
   {% if previous_year and previous_year != current_year %}
-    <hr>
+<hr>
   {% endif %}
   <details>
     <summary>{{ (month.name | append: "-01") | date: "%B %Y" }}</summary>
