@@ -126,7 +126,16 @@ def is_relevant(summary, topic_description, model, threshold=0.5):
     """
     Check if the summary is relevant to the topic description using the AI model.
     """
-    prompt = f"Is the following paper summary relevant to the topic description?\n\nSummary: {summary}\n\nTopic Description: {topic_description}\n\nAnswer with a relevance score between 0 and 1. No explanation is needed"
+    prompt = f"""Is the following paper summary relevant to the topic description?
+
+Summary: {summary}
+
+Topic Description: {topic_description}
+
+Answer with ONLY a single number between 0 and 1 representing the relevance score. 
+Do not include any other text, explanation, or JSON formatting. 
+Just output the number, for example: 0.9"""
+    
     response = model.generate_content(prompt)
     # The Gemini free tier has a rate limit of 15 RPM
     time.sleep(5)
