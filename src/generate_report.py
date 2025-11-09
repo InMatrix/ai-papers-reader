@@ -188,7 +188,7 @@ def get_most_recent_file(directory):
     ]
     if not files:
         raise FileNotFoundError(f"No files found in {directory}")
-    return max(files, key=os.path.getctime)
+    return max(files, key=os.path.getmtime)
 
 
 def setup_argparse():
