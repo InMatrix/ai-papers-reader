@@ -162,7 +162,7 @@ def summarize_pdf(pdf_content):
         temp_pdf.flush()
         
         # Upload the PDF file with retry logic
-        uploaded_file = upload_file_with_retry(path=temp_pdf.name, display_name="paper.pdf")
+        uploaded_file = upload_file_with_retry(temp_pdf.name, "paper.pdf")
         
     # Generate content using the uploaded file
     with open('prompts/summarize_paper.txt', 'r') as file:
