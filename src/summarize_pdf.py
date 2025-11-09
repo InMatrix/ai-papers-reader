@@ -1,5 +1,5 @@
 """
-PDF Summarizer using Google's Gemini 1.5 Flash Model
+PDF Summarizer using Google's Gemini 2.5 Flash Model
 
 This script downloads a PDF from a given URL and generates a summary using
 Google's Gemini 1.5 Flash model. It utilizes the google-generativeai library
@@ -38,10 +38,11 @@ import tempfile
 import google.generativeai as genai
 import frontmatter
 import re
+import time
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
-model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+model = genai.GenerativeModel('gemini-flash-latest')
 
 def download_pdf(url):
     """
@@ -91,9 +92,64 @@ def clean_markdown_blocks(text):
     text = re.sub(r'\n```\s*$', '', text)
     return text
 
+def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay=1):
+    """
+    Upload a file to Gemini with retry logic for handling transient errors.
+    
+    Args:
+    file_path (str): Path to the file to upload.
+    display_name (str): Display name for the uploaded file.
+    max_retries (int): Maximum number of retry attempts. Default is 5.
+    initial_delay (int): Initial delay in seconds before first retry. Default is 1.
+    
+    Returns:
+    The uploaded file object.
+    
+    Raises:
+    Exception: If all retry attempts fail.
+    """
+    from googleapiclient.errors import ResumableUploadError, HttpError
+    
+    delay = initial_delay
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            uploaded_file = genai.upload_file(path=file_path, display_name=display_name)
+            if attempt > 0:
+                print(f"Successfully uploaded file after {attempt + 1} attempt(s)")
+            return uploaded_file
+        except (ResumableUploadError, HttpError) as e:
+            last_exception = e
+            # Check if it's a 503 Service Unavailable or other transient error
+            if hasattr(e, 'resp') and hasattr(e.resp, 'status'):
+                status_code = e.resp.status
+            else:
+                # Try to extract status from error message
+                status_code = 503 if '503' in str(e) else None
+            
+            # Retry on 503, 429 (rate limit), 500, 502, 504 errors
+            if status_code in [500, 502, 503, 504, 429]:
+                if attempt < max_retries - 1:
+                    print(f"Upload attempt {attempt + 1} failed with status {status_code}: {str(e)}. Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                    delay *= 2  # Exponential backoff
+                else:
+                    print(f"Upload failed after {max_retries} attempts")
+            else:
+                # Non-retryable error, raise immediately
+                raise
+        except Exception as e:
+            # For other unexpected exceptions, raise immediately
+            print(f"Unexpected error during upload: {e}")
+            raise
+    
+    # If we exhausted all retries, raise the last exception
+    raise last_exception
+
 def summarize_pdf(pdf_content):
     """
-    Summarize the content of a PDF using the Gemini 1.5 Flash model.
+    Summarize the content of a PDF using the Gemini 2.5 Flash model.
 
     Args:
     pdf_content (bytes): The content of the PDF file.
@@ -105,8 +161,8 @@ def summarize_pdf(pdf_content):
         temp_pdf.write(pdf_content)
         temp_pdf.flush()
         
-        # Upload the PDF file
-        uploaded_file = genai.upload_file(path=temp_pdf.name, display_name="paper.pdf")
+        # Upload the PDF file with retry logic
+        uploaded_file = upload_file_with_retry(temp_pdf.name, "paper.pdf")
         
     # Generate content using the uploaded file
     with open('prompts/summarize_paper.txt', 'r') as file:
@@ -230,7 +286,7 @@ def main(pdf_url, save_location):
     return summary_path
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 1.5 Flash.")
+    parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 2.5 Flash.")
     parser.add_argument("url", help="The URL of the PDF to summarize")
     parser.add_argument("--save_location", default="docs/summaries", help="Directory to save the summary file. Default is 'docs/summaries'.")
     args = parser.parse_args()

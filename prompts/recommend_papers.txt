@@ -22,3 +22,5 @@ Use this JSON schema:
 Paper = {'title': str, 'relevance': str, 'url': str}
 Topic = {'topic': str, 'papers': list[Paper]}
 Return: list[Topic]
+
+IMPORTANT: Return ONLY the raw JSON array. Do NOT include any markdown formatting, code fences (```), explanatory text, or any other content before or after the JSON. Your entire response must be a valid JSON array that can be parsed directly.
