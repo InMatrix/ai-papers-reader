@@ -1,5 +1,5 @@
 """
-PDF Summarizer using Google's Gemini 1.5 Flash Model
+PDF Summarizer using Google's Gemini 2.5 Flash Model
 
 This script downloads a PDF from a given URL and generates a summary using
 Google's Gemini 1.5 Flash model. It utilizes the google-generativeai library
@@ -42,7 +42,7 @@ import time
 
 # Configure the generative AI model
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
-model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+model = genai.GenerativeModel('gemini-flash-latest')
 
 def download_pdf(url):
     """
@@ -149,7 +149,7 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
 
 def summarize_pdf(pdf_content):
     """
-    Summarize the content of a PDF using the Gemini 1.5 Flash model.
+    Summarize the content of a PDF using the Gemini 2.5 Flash model.
 
     Args:
     pdf_content (bytes): The content of the PDF file.
@@ -286,7 +286,7 @@ def main(pdf_url, save_location):
     return summary_path
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 1.5 Flash.")
+    parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 2.5 Flash.")
     parser.add_argument("url", help="The URL of the PDF to summarize")
     parser.add_argument("--save_location", default="docs/summaries", help="Directory to save the summary file. Default is 'docs/summaries'.")
     args = parser.parse_args()
