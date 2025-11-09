@@ -21,10 +21,34 @@ def write_file(filename, content):
 
 def parse_model_response(response):
     try:
-        # Remove leading and trailing whitespace and markdown code block markers
+        # Remove leading and trailing whitespace
         cleaned_response = response.text.strip()
-        if cleaned_response.startswith("```json") and cleaned_response.endswith("```"):
-            cleaned_response = cleaned_response[7:-3].strip()
+        
+        # Remove markdown code fences if present
+        # Handle ```json\n...\n``` format
+        if cleaned_response.startswith("```json"):
+            cleaned_response = cleaned_response[7:]  # Remove ```json
+        # Handle ```\n...\n``` format
+        elif cleaned_response.startswith("```"):
+            cleaned_response = cleaned_response[3:]  # Remove ```
+        
+        # Remove trailing code fence
+        if cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response[:-3]  # Remove ```
+        
+        # Remove any leading text before the JSON array/object starts
+        # Find the first occurrence of [ or {
+        start_idx = -1
+        for i, char in enumerate(cleaned_response):
+            if char in ['{', '[']:
+                start_idx = i
+                break
+        
+        if start_idx > 0:
+            cleaned_response = cleaned_response[start_idx:]
+        
+        # Strip again after all processing
+        cleaned_response = cleaned_response.strip()
         
         # Parse the cleaned response as JSON
         response_json = json.loads(cleaned_response)
@@ -222,7 +246,13 @@ def main():
         raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    
+    # Configure the model with JSON response format
+    generation_config = {
+        "response_mime_type": "application/json",
+        "temperature": 0.7,
+    }
+    model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
     report_content = generate_report(model, prompt, topics, date_string, skip_summary=args.skip_summary)
