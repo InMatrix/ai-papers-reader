@@ -183,7 +183,7 @@ def generate_report(model, prompt, topics, date_string, report_path, skip_summar
                     print(f"Error processing paper {paper.get('title')}: {e}")
 
                 # Save markdown after every paper processed
-                save_markdown(response_json)
+                markdown_content = save_markdown(response_json)
 
     return markdown_content
 
