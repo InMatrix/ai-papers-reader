@@ -4,7 +4,6 @@ import yaml
 import shutil
 from unittest.mock import Mock, patch
 import json
-import os
 
 @pytest.fixture
 def setup_files(tmp_path):
