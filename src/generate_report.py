@@ -19,6 +19,52 @@ def write_file(filename, content):
         file.write(content)
 
 
+def update_status(paper_data_path, updates):
+    """
+    Updates the status.json file with the given updates.
+    """
+    status_file = "paper_data/status.json"
+    data_filename = os.path.basename(paper_data_path)
+
+    # Read existing status or create new
+    if os.path.exists(status_file):
+        try:
+            with open(status_file, "r") as f:
+                status_data = json.load(f)
+        except json.JSONDecodeError:
+            status_data = {}
+    else:
+        status_data = {}
+
+    # Initialize entry if not present
+    if data_filename not in status_data:
+        status_data[data_filename] = {
+            "initial_report_generated": False,
+            "papers_summarized": {},
+            "final_report_generated": False,
+            "last_updated": ""
+        }
+
+    # Apply updates
+    if "initial_report_generated" in updates:
+        status_data[data_filename]["initial_report_generated"] = updates["initial_report_generated"]
+
+    if "papers_summarized" in updates:
+        # Merge dictionary updates
+        if "papers_summarized" not in status_data[data_filename]:
+            status_data[data_filename]["papers_summarized"] = {}
+        status_data[data_filename]["papers_summarized"].update(updates["papers_summarized"])
+
+    if "final_report_generated" in updates:
+        status_data[data_filename]["final_report_generated"] = updates["final_report_generated"]
+
+    status_data[data_filename]["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Write back to file
+    with open(status_file, "w") as f:
+        json.dump(status_data, f, indent=2)
+
+
 def parse_model_response(response):
     try:
         # Remove leading and trailing whitespace
@@ -124,7 +170,7 @@ def inflate_prompt(
     return prompt, topics
 
 
-def generate_report(model, prompt, topics, date_string, report_path, skip_summary=False):
+def generate_report(model, prompt, topics, paper_data_path, date_string, report_path, skip_summary=False):
     # generate paper recommendations in json format
     response = model.generate_content(prompt)
     response_json = parse_model_response(response)
@@ -138,6 +184,7 @@ def generate_report(model, prompt, topics, date_string, report_path, skip_summar
 
     # Save initial report
     markdown_content = save_markdown(response_json)
+    update_status(paper_data_path, {"initial_report_generated": True})
     
     if not skip_summary:
         summary_save_location = os.path.join("docs", date_string)
@@ -168,6 +215,7 @@ def generate_report(model, prompt, topics, date_string, report_path, skip_summar
                             # Relevant: update paper details
                             paper["summary_path"] = summary_path.replace(f"{summary_save_location}/", "")
                             paper["summary_content"] = summary_content
+                            update_status(paper_data_path, {"papers_summarized": {paper["url"]: True}})
                         else:
                             # Irrelevant: remove from original list
                             print(f"Dropped paper '{paper.get('title')}' from topic '{topic['topic']}' with relevance score: {relevance_score}")
@@ -176,6 +224,7 @@ def generate_report(model, prompt, topics, date_string, report_path, skip_summar
                             # Delete summary file
                             if os.path.exists(summary_path):
                                 os.remove(summary_path)
+                            update_status(paper_data_path, {"papers_summarized": {paper["url"]: False}})
                     else:
                          print(f"Failed to generate summary for {paper.get('title')}")
 
@@ -185,6 +234,7 @@ def generate_report(model, prompt, topics, date_string, report_path, skip_summar
                 # Save markdown after every paper processed
                 markdown_content = save_markdown(response_json)
 
+    update_status(paper_data_path, {"final_report_generated": True})
     return markdown_content
 
 
@@ -243,7 +293,11 @@ def main():
     model = genai.GenerativeModel("gemini-flash-latest", generation_config=generation_config)
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
-    generate_report(model, prompt, topics, date_string, args.report_path, skip_summary=args.skip_summary)
+
+    # Initialize status entry
+    update_status(args.paper_data_path, {})
+
+    generate_report(model, prompt, topics, args.paper_data_path, date_string, args.report_path, skip_summary=args.skip_summary)
 
     print(f"Report generated and saved to {args.report_path}")
 
