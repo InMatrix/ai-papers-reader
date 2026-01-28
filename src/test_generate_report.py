@@ -69,11 +69,7 @@ def test_generate_report_incremental(tmp_path):
     mock_model = Mock()
     # Mock responses for generate_report
     # 1. Recommendation (response_json)
-    # 2. Relevance check for Paper 1 (High relevance)
-    mock_model.generate_content.side_effect = [
-        MockModelResponse(json.dumps(mock_json_response)), # Recommendations
-        MockModelResponse("0.9") # Relevance
-    ]
+    mock_model.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
 
     prompt = "dummy prompt"
     topics = [{"topic": "Topic 1", "description": "Desc 1"}]
@@ -81,10 +77,12 @@ def test_generate_report_incremental(tmp_path):
     with patch('generate_report.summarize_pdf.pdf_to_summary') as mock_pdf_to_summary, \
          patch('generate_report.summarize_pdf.get_summary_path') as mock_get_path, \
          patch('generate_report.write_file') as mock_write_file, \
-         patch('builtins.open', new_callable=MagicMock) as mock_open:
+         patch('builtins.open', new_callable=MagicMock) as mock_open, \
+         patch('generate_report.is_relevant') as mock_is_relevant:
 
         mock_get_path.return_value = str(tmp_path / "summary.md")
         mock_pdf_to_summary.return_value = "Summary Content"
+        mock_is_relevant.return_value = 0.9
 
         generate_report(mock_model, prompt, topics, date_string, str(report_path))
 
@@ -95,6 +93,8 @@ def test_generate_report_incremental(tmp_path):
         assert mock_write_file.call_count >= 2
         # 3. Summary written to file
         mock_open.assert_any_call(str(tmp_path / "summary.md"), 'w')
+        # 4. Relevance checked
+        mock_is_relevant.assert_called()
 
 def test_generate_report_deletes_irrelevant(tmp_path):
     # Setup
@@ -104,11 +104,7 @@ def test_generate_report_deletes_irrelevant(tmp_path):
 
     mock_model = Mock()
     # 1. Recommendation
-    # 2. Relevance check (Low relevance)
-    mock_model.generate_content.side_effect = [
-        MockModelResponse(json.dumps(mock_json_response)),
-        MockModelResponse("0.1")
-    ]
+    mock_model.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
 
     prompt = "dummy prompt"
     topics = [{"topic": "Topic 1", "description": "Desc 1"}]
@@ -118,10 +114,12 @@ def test_generate_report_deletes_irrelevant(tmp_path):
          patch('generate_report.write_file') as mock_write_file, \
          patch('builtins.open', new_callable=MagicMock) as mock_open, \
          patch('os.remove') as mock_remove, \
-         patch('generate_report.os.path.exists', return_value=True): # Mock only generate_report's view of os.path.exists
+         patch('generate_report.os.path.exists', return_value=True), \
+         patch('generate_report.is_relevant') as mock_is_relevant: # Mock only generate_report's view of os.path.exists
 
         mock_get_path.return_value = str(summary_path)
         mock_pdf_to_summary.return_value = "Summary Content"
+        mock_is_relevant.return_value = 0.1
 
         generate_report(mock_model, prompt, topics, date_string, str(report_path))
 
