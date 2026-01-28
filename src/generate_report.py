@@ -187,25 +187,39 @@ def inflate_prompt(
     return prompt, topics
 
 
-def generate_report(model, prompt, topics, date_string, skip_summary=False):
+def generate_report(model, prompt, topics, date_string, report_path, skip_summary=False):
     # generate paper recommendations in json format
     response = model.generate_content(prompt)
     response_json = parse_model_response(response)
     
-    if not skip_summary:
-        # create paper summaries
-        summary_save_location = os.path.join("docs", date_string)
-        response_json = add_summary_to_response(
-            response_json, save_location=summary_save_location
-        )
-        # assess relevance based on paper summaries and drop less relevant papers
-        response_json = assess_relevance(response_json, topics, model)
-        write_summary_files(response_json, summary_save_location)
+    # helper to generate and save markdown
+    def save_markdown(data):
+        content = json_to_markdown(data, date_string)
+        content = f"---\nlayout: default\ntitle: {date_string}\npermalink: /{date_string}/\n---\n\n{content}"
+        write_file(report_path, content)
+        return content
+
+    # Save initial report
+    markdown_content = save_markdown(response_json)
     
-    # convert json to markdown
-    markdown_content = json_to_markdown(response_json, date_string)
-    # add front matter to the markdown content
-    markdown_content = f"---\nlayout: default\ntitle: {date_string}\npermalink: /{date_string}/\n---\n\n{markdown_content}"
+    if not skip_summary:
+        try:
+            # create paper summaries
+            summary_save_location = os.path.join("docs", date_string)
+            response_json = add_summary_to_response(
+                response_json, save_location=summary_save_location
+            )
+            # assess relevance based on paper summaries and drop less relevant papers
+            response_json = assess_relevance(response_json, topics, model)
+            write_summary_files(response_json, summary_save_location)
+
+            # Update report with summaries
+            markdown_content = save_markdown(response_json)
+        except Exception as e:
+            print(f"Error during summarization: {e}")
+            print("Saving partial progress...")
+            markdown_content = save_markdown(response_json)
+
     return markdown_content
 
 
@@ -264,9 +278,8 @@ def main():
     model = genai.GenerativeModel("gemini-flash-latest", generation_config=generation_config)
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
-    report_content = generate_report(model, prompt, topics, date_string, skip_summary=args.skip_summary)
+    generate_report(model, prompt, topics, date_string, args.report_path, skip_summary=args.skip_summary)
 
-    write_file(args.report_path, report_content)
     print(f"Report generated and saved to {args.report_path}")
 
 
