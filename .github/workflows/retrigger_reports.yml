@@ -1,0 +1,40 @@
+name: Manually retrigger report generation for unprocessed items
+
+on:
+  workflow_dispatch:
+
+jobs:
+  retrigger-reports:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run retrigger script
+      env:
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      run: |
+        python src/retrigger_unprocessed.py
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add paper_data/status.json docs/
+        if [ -n "$(git status --porcelain)" ]; then
+          git commit -m 'Update status.json and generate missing reports'
+          git push
+        else
+          echo "No changes to commit"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
