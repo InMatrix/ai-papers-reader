@@ -73,55 +73,6 @@ def parse_model_response(response):
     return response_json
 
 
-def add_summary_to_response(response_json, save_location):
-    """
-    Iterate over the response json and add a summary
-    for each paper based on its URL
-    """
-    for topic in response_json:
-        for paper in topic["papers"]:
-            summary_path = summarize_pdf.get_summary_path(paper["url"], save_location)
-            summary_content = summarize_pdf.pdf_to_summary(paper["url"], summary_path)
-            if summary_path is not None:
-                # Use relative path to the summary file
-                paper["summary_path"] = summary_path.replace(
-                    f"{save_location}/", ""
-                )
-                paper["summary_content"] = summary_content
-    return response_json
-
-def assess_relevance(response_json, topics, model):
-    """
-    Assess the relevance of each paper's summary to its topic description
-    and remove irrelevant papers.
-    """
-    dropped_papers = []
-    for topic in response_json:
-        topic_description = next((t['description'] for t in topics if t['topic'] == topic['topic']), None)
-        if not topic_description:
-            raise ValueError(f"Topic description not found for {topic['topic']}")
-        
-        relevant_papers = []
-        for paper in topic["papers"]:
-            summary_content = paper.get("summary_content", "")
-            relevance_score = is_relevant(summary_content, topic_description, model)
-            if relevance_score >= 0.5:
-                relevant_papers.append(paper)
-            else:
-                dropped_papers.append({
-                    "topic": topic['topic'],
-                    "paper_title": paper.get("title", "Unknown Title"),
-                    "relevance_score": relevance_score
-                })
-        
-        topic["papers"] = relevant_papers
-    
-    # Print dropped papers
-    for paper in dropped_papers:
-        print(f"Dropped paper '{paper['paper_title']}' from topic '{paper['topic']}' with relevance score: {paper['relevance_score']}")
-    
-    return response_json
-
 def is_relevant(summary, topic_description, model, threshold=0.5):
     """
     Check if the summary is relevant to the topic description using the AI model.
@@ -142,20 +93,6 @@ Just output the number, for example: 0.9"""
     relevance_score = float(response.text.strip())
     return relevance_score
 
-def write_summary_files(response_json, save_location):
-    """
-    Write the summary content to a file for each paper in the response json.
-    """
-    for topic in response_json:
-        for paper in topic["papers"]:
-            summary_path = paper.get("summary_path")
-            summary_content = paper.get("summary_content")
-            if summary_path is not None and summary_content is not None:
-                # Write the summary content to a file
-                with open(os.path.join(save_location, summary_path), "w") as file:
-                    file.write(summary_content)
-                # Print out which paper's summary has been saved to a file
-                print(f"Saved a summary of the paper {paper['title']} to {summary_path}")
 
 def inflate_prompt(
     prompt_template_path, paper_data_path, topics_path="prompts/_topics.yaml"
@@ -203,22 +140,50 @@ def generate_report(model, prompt, topics, date_string, report_path, skip_summar
     markdown_content = save_markdown(response_json)
     
     if not skip_summary:
-        try:
-            # create paper summaries
-            summary_save_location = os.path.join("docs", date_string)
-            response_json = add_summary_to_response(
-                response_json, save_location=summary_save_location
-            )
-            # assess relevance based on paper summaries and drop less relevant papers
-            response_json = assess_relevance(response_json, topics, model)
-            write_summary_files(response_json, summary_save_location)
+        summary_save_location = os.path.join("docs", date_string)
 
-            # Update report with summaries
-            markdown_content = save_markdown(response_json)
-        except Exception as e:
-            print(f"Error during summarization: {e}")
-            print("Saving partial progress...")
-            markdown_content = save_markdown(response_json)
+        for topic in response_json:
+            topic_description = next((t['description'] for t in topics if t['topic'] == topic['topic']), None)
+            if not topic_description:
+                print(f"Warning: Topic description not found for {topic['topic']}")
+                continue
+
+            # Iterate over a copy to allow modification of the original list
+            papers_to_process = list(topic["papers"])
+
+            for paper in papers_to_process:
+                try:
+                    summary_path = summarize_pdf.get_summary_path(paper["url"], summary_save_location)
+                    summary_content = summarize_pdf.pdf_to_summary(paper["url"], summary_path)
+
+                    if summary_path and summary_content:
+                        # Write summary to file
+                        with open(summary_path, "w") as file:
+                            file.write(summary_content)
+                        print(f"Saved a summary of the paper {paper['title']} to {summary_path}")
+
+                        relevance_score = is_relevant(summary_content, topic_description, model)
+
+                        if relevance_score >= 0.5:
+                            # Relevant: update paper details
+                            paper["summary_path"] = summary_path.replace(f"{summary_save_location}/", "")
+                            paper["summary_content"] = summary_content
+                        else:
+                            # Irrelevant: remove from original list
+                            print(f"Dropped paper '{paper.get('title')}' from topic '{topic['topic']}' with relevance score: {relevance_score}")
+                            topic["papers"].remove(paper)
+
+                            # Delete summary file
+                            if os.path.exists(summary_path):
+                                os.remove(summary_path)
+                    else:
+                         print(f"Failed to generate summary for {paper.get('title')}")
+
+                except Exception as e:
+                    print(f"Error processing paper {paper.get('title')}: {e}")
+
+                # Save markdown after every paper processed
+                save_markdown(response_json)
 
     return markdown_content
 
