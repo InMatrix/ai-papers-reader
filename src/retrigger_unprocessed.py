@@ -3,15 +3,11 @@ import json
 import glob
 import subprocess
 import time
+from generate_report import extract_date_from_paper_data_path
 
 STATUS_FILE = "paper_data/status.json"
 PAPER_DATA_DIR = "paper_data"
 DOCS_DIR = "docs"
-
-def extract_date_from_paper_data_path(paper_data_path):
-    # e.g., paper_metadata_2024-06-21.txt -> 2024-06-21
-    return paper_data_path.split("_")[-1].split(".")[0]
-
 def backfill_status():
     """
     Scans for existing reports and marks corresponding data files as completed in status.json
