@@ -64,6 +64,7 @@ class MockModelResponse:
 def test_generate_report_incremental(tmp_path):
     # Setup
     report_path = tmp_path / "report.md"
+    paper_data_path = tmp_path / "paper_data.txt"
     date_string = "2023-10-27"
 
     mock_model = Mock()
@@ -78,13 +79,14 @@ def test_generate_report_incremental(tmp_path):
          patch('generate_report.summarize_pdf.get_summary_path') as mock_get_path, \
          patch('generate_report.write_file') as mock_write_file, \
          patch('builtins.open', new_callable=MagicMock) as mock_open, \
-         patch('generate_report.is_relevant') as mock_is_relevant:
+         patch('generate_report.is_relevant') as mock_is_relevant, \
+         patch('generate_report.update_status') as mock_update_status:
 
         mock_get_path.return_value = str(tmp_path / "summary.md")
         mock_pdf_to_summary.return_value = "Summary Content"
         mock_is_relevant.return_value = 0.9
 
-        generate_report(mock_model, prompt, topics, date_string, str(report_path))
+        generate_report(mock_model, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Verify
         # 1. Summary generated
@@ -95,10 +97,13 @@ def test_generate_report_incremental(tmp_path):
         mock_open.assert_any_call(str(tmp_path / "summary.md"), 'w')
         # 4. Relevance checked
         mock_is_relevant.assert_called()
+        # 5. Status updated
+        assert mock_update_status.call_count >= 3 # initial, per paper, final
 
 def test_generate_report_deletes_irrelevant(tmp_path):
     # Setup
     report_path = tmp_path / "report.md"
+    paper_data_path = tmp_path / "paper_data.txt"
     date_string = "2023-10-27"
     summary_path = tmp_path / "summary.md"
 
@@ -115,20 +120,24 @@ def test_generate_report_deletes_irrelevant(tmp_path):
          patch('builtins.open', new_callable=MagicMock) as mock_open, \
          patch('os.remove') as mock_remove, \
          patch('generate_report.os.path.exists', return_value=True), \
-         patch('generate_report.is_relevant') as mock_is_relevant: # Mock only generate_report's view of os.path.exists
+         patch('generate_report.is_relevant') as mock_is_relevant, \
+         patch('generate_report.update_status') as mock_update_status: # Mock only generate_report's view of os.path.exists
 
         mock_get_path.return_value = str(summary_path)
         mock_pdf_to_summary.return_value = "Summary Content"
         mock_is_relevant.return_value = 0.1
 
-        generate_report(mock_model, prompt, topics, date_string, str(report_path))
+        generate_report(mock_model, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Verify deletion
         mock_remove.assert_called_with(str(summary_path))
+        # Status should still be updated
+        assert mock_update_status.called
 
 def test_generate_report_saves_partial_on_error(tmp_path):
     # Setup
     report_path = tmp_path / "report.md"
+    paper_data_path = tmp_path / "paper_data.txt"
     date_string = "2023-10-27"
 
     mock_model = Mock()
@@ -139,12 +148,15 @@ def test_generate_report_saves_partial_on_error(tmp_path):
 
     # Mock summarize_pdf to raise exception
     with patch('generate_report.summarize_pdf.pdf_to_summary') as mock_pdf_to_summary, \
-         patch('generate_report.summarize_pdf.get_summary_path') as mock_get_path:
+         patch('generate_report.summarize_pdf.get_summary_path') as mock_get_path, \
+         patch('generate_report.update_status') as mock_update_status:
 
         mock_get_path.return_value = str(tmp_path / "summary.md")
         mock_pdf_to_summary.side_effect = Exception("Quota exceeded")
 
-        generate_report(mock_model, prompt, topics, date_string, str(report_path))
+        generate_report(mock_model, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Should still have saved initial report and potentially partial updates (though here it failed on first paper)
         assert report_path.exists()
+        # Initial status update should have happened
+        mock_update_status.assert_any_call(str(paper_data_path), {"initial_report_generated": True})
