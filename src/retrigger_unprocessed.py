@@ -97,10 +97,12 @@ def process_incomplete():
 
         if needs_processing:
             print(f"Triggering report generation for {filename}...")
+            date_string = extract_date_from_paper_data_path(filename)
+            report_path = os.path.join(DOCS_DIR, date_string, "index.md")
             try:
                 # Call generate_report.py
                 subprocess.run(
-                    ["python", "src/generate_report.py", "--paper_data_path", paper_path],
+                    ["python", "src/generate_report.py", "--paper_data_path", paper_path, "--report_path", report_path],
                     check=True
                 )
                 print(f"Successfully processed {filename}")
