@@ -1,8 +1,8 @@
 """
-PDF Summarizer using Google's Gemini 2.5 Flash Model
+PDF Summarizer using Google's Gemini Flash Model
 
 This script downloads a PDF from a given URL and generates a summary using
-Google's Gemini 1.5 Flash model. It utilizes the google-genai library
+Google's Gemini Flash model. It utilizes the google-genai library
 to interact with the Gemini model and directly uploads the PDF for processing.
 
 Features:
@@ -116,13 +116,18 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     Raises:
     Exception: If all retry attempts fail.
     """
+    from google.genai import types
+    
     client = get_client()
     delay = initial_delay
     last_exception = None
     
     for attempt in range(max_retries):
         try:
-            uploaded_file = client.files.upload(file=file_path)
+            uploaded_file = client.files.upload(
+                file=file_path,
+                config=types.UploadFileConfig(display_name=display_name)
+            )
             if attempt > 0:
                 print(f"Successfully uploaded file after {attempt + 1} attempt(s)")
             return uploaded_file
@@ -150,7 +155,7 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
 
 def summarize_pdf(pdf_content):
     """
-    Summarize the content of a PDF using the Gemini 2.5 Flash model.
+    Summarize the content of a PDF using the Gemini Flash model.
 
     Args:
     pdf_content (bytes): The content of the PDF file.
