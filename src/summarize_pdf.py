@@ -2,24 +2,24 @@
 PDF Summarizer using Google's Gemini 2.5 Flash Model
 
 This script downloads a PDF from a given URL and generates a summary using
-Google's Gemini 1.5 Flash model. It utilizes the google-generativeai library
+Google's Gemini 1.5 Flash model. It utilizes the google-genai library
 to interact with the Gemini model and directly uploads the PDF for processing.
 
 Features:
 - Downloads a PDF from a specified URL
-- Uploads the PDF directly to the Gemini model using genai.upload_file
+- Uploads the PDF directly to the Gemini model using client.files.upload
 - Generates a 500-word summary of the PDF content
 - Accepts the PDF URL as a command-line argument
 
 Requirements:
 - Python 3.7+
-- google-generativeai library
+- google-genai library
 - requests library
 - frontmatter library
 
 Usage:
 1. Install required libraries:
-   pip install google-generativeai requests frontmatter
+   pip install google-genai requests frontmatter
 
 2. Set your Google API key in the script or as an environment variable:
    export GOOGLE_API_KEY='your_google_api_key_here'
@@ -40,8 +40,17 @@ import frontmatter
 import re
 import time
 
-# Configure the generative AI client
-client = genai.Client(api_key=os.environ['GOOGLE_API_KEY'])
+# Initialize client lazily
+_client = None
+
+def get_client():
+    """
+    Get or create the generative AI client.
+    """
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=os.environ['GOOGLE_API_KEY'])
+    return _client
 
 def download_pdf(url):
     """
@@ -107,8 +116,7 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     Raises:
     Exception: If all retry attempts fail.
     """
-    from googleapiclient.errors import ResumableUploadError, HttpError
-    
+    client = get_client()
     delay = initial_delay
     last_exception = None
     
@@ -118,19 +126,17 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
             if attempt > 0:
                 print(f"Successfully uploaded file after {attempt + 1} attempt(s)")
             return uploaded_file
-        except (ResumableUploadError, HttpError) as e:
+        except Exception as e:
             last_exception = e
-            # Check if it's a 503 Service Unavailable or other transient error
-            if hasattr(e, 'resp') and hasattr(e.resp, 'status'):
-                status_code = e.resp.status
-            else:
-                # Try to extract status from error message
-                status_code = 503 if '503' in str(e) else None
+            error_str = str(e).lower()
             
-            # Retry on 503, 429 (rate limit), 500, 502, 504 errors
-            if status_code in [500, 502, 503, 504, 429]:
+            # Check if it's a retryable error (503, 429, 500, 502, 504)
+            # The new SDK may wrap these differently, so we check the error message
+            is_retryable = any(code in error_str for code in ['503', '429', '500', '502', '504', 'unavailable', 'rate limit'])
+            
+            if is_retryable:
                 if attempt < max_retries - 1:
-                    print(f"Upload attempt {attempt + 1} failed with status {status_code}: {str(e)}. Retrying in {delay} seconds...")
+                    print(f"Upload attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
                     time.sleep(delay)
                     delay *= 2  # Exponential backoff
                 else:
@@ -138,10 +144,6 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
             else:
                 # Non-retryable error, raise immediately
                 raise
-        except Exception as e:
-            # For other unexpected exceptions, raise immediately
-            print(f"Unexpected error during upload: {e}")
-            raise
     
     # If we exhausted all retries, raise the last exception
     raise last_exception
@@ -156,6 +158,8 @@ def summarize_pdf(pdf_content):
     Returns:
     str: A 500-word summary of the PDF content.
     """
+    client = get_client()
+    
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
         temp_pdf.write(pdf_content)
         temp_pdf.flush()
