@@ -35,7 +35,7 @@ def test_clean_markdown_blocks_empty_text():
 def test_upload_file_with_retry_success():
     """Test successful upload on first attempt."""
     mock_file = Mock()
-    with patch('summarize_pdf.genai.upload_file', return_value=mock_file):
+    with patch('summarize_pdf.client.files.upload', return_value=mock_file):
         result = upload_file_with_retry('/tmp/test.pdf', 'test.pdf')
         assert result == mock_file
 
@@ -50,7 +50,7 @@ def test_upload_file_with_retry_success_after_failure():
     # Create a mock HttpError
     http_error = HttpError(mock_resp, b'Service Unavailable')
     
-    with patch('summarize_pdf.genai.upload_file') as mock_upload:
+    with patch('summarize_pdf.client.files.upload') as mock_upload:
         # First call raises 503, second call succeeds
         mock_upload.side_effect = [http_error, mock_file]
         
@@ -67,7 +67,7 @@ def test_upload_file_with_retry_max_retries_exceeded():
     mock_resp.status = 503
     http_error = HttpError(mock_resp, b'Service Unavailable')
     
-    with patch('summarize_pdf.genai.upload_file', side_effect=http_error):
+    with patch('summarize_pdf.client.files.upload', side_effect=http_error):
         with patch('time.sleep'):  # Mock sleep to speed up test
             with pytest.raises(HttpError):
                 upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)
@@ -80,6 +80,6 @@ def test_upload_file_with_retry_non_retryable_error():
     mock_resp.status = 404  # Not Found - not retryable
     http_error = HttpError(mock_resp, b'Not Found')
     
-    with patch('summarize_pdf.genai.upload_file', side_effect=http_error):
+    with patch('summarize_pdf.client.files.upload', side_effect=http_error):
         with pytest.raises(HttpError):
             result = upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)

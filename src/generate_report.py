@@ -3,7 +3,7 @@ import argparse
 import json
 import yaml
 import time
-import google.generativeai as genai
+from google import genai
 import summarize_pdf
 from json_to_markdown import json_to_markdown
 
@@ -119,7 +119,7 @@ def parse_model_response(response):
     return response_json
 
 
-def is_relevant(summary, topic_description, model, threshold=0.5):
+def is_relevant(summary, topic_description, client, threshold=0.5):
     """
     Check if the summary is relevant to the topic description using the AI model.
     """
@@ -133,7 +133,10 @@ Answer with ONLY a single number between 0 and 1 representing the relevance scor
 Do not include any other text, explanation, or JSON formatting. 
 Just output the number, for example: 0.9"""
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model='gemini-flash-latest',
+        contents=prompt
+    )
     # The Gemini free tier has a rate limit of 15 RPM
     time.sleep(5)
     relevance_score = float(response.text.strip())
@@ -170,9 +173,16 @@ def inflate_prompt(
     return prompt, topics
 
 
-def generate_report(model, prompt, topics, paper_data_path, date_string, report_path, skip_summary=False):
+def generate_report(client, prompt, topics, paper_data_path, date_string, report_path, skip_summary=False):
     # generate paper recommendations in json format
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model='gemini-flash-latest',
+        contents=prompt,
+        config={
+            "response_mime_type": "application/json",
+            "temperature": 0.7,
+        }
+    )
     response_json = parse_model_response(response)
     
     # helper to generate and save markdown
@@ -209,7 +219,7 @@ def generate_report(model, prompt, topics, paper_data_path, date_string, report_
                             file.write(summary_content)
                         print(f"Saved a summary of the paper {paper['title']} to {summary_path}")
 
-                        relevance_score = is_relevant(summary_content, topic_description, model)
+                        relevance_score = is_relevant(summary_content, topic_description, client)
 
                         if relevance_score >= 0.5:
                             # Relevant: update paper details
@@ -283,21 +293,14 @@ def main():
     if not GOOGLE_API_KEY:
         raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
-    genai.configure(api_key=GOOGLE_API_KEY)
-    
-    # Configure the model with JSON response format
-    generation_config = {
-        "response_mime_type": "application/json",
-        "temperature": 0.7,
-    }
-    model = genai.GenerativeModel("gemini-flash-latest", generation_config=generation_config)
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
 
     # Initialize status entry
     update_status(args.paper_data_path, {})
 
-    generate_report(model, prompt, topics, args.paper_data_path, date_string, args.report_path, skip_summary=args.skip_summary)
+    generate_report(client, prompt, topics, args.paper_data_path, date_string, args.report_path, skip_summary=args.skip_summary)
 
     print(f"Report generated and saved to {args.report_path}")
 

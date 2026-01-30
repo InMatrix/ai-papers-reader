@@ -35,14 +35,13 @@ import os
 import argparse
 import requests
 import tempfile
-import google.generativeai as genai
+from google import genai
 import frontmatter
 import re
 import time
 
-# Configure the generative AI model
-genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
-model = genai.GenerativeModel('gemini-flash-latest')
+# Configure the generative AI client
+client = genai.Client(api_key=os.environ['GOOGLE_API_KEY'])
 
 def download_pdf(url):
     """
@@ -115,7 +114,7 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     
     for attempt in range(max_retries):
         try:
-            uploaded_file = genai.upload_file(path=file_path, display_name=display_name)
+            uploaded_file = client.files.upload(file=file_path)
             if attempt > 0:
                 print(f"Successfully uploaded file after {attempt + 1} attempt(s)")
             return uploaded_file
@@ -169,7 +168,10 @@ def summarize_pdf(pdf_content):
         prompt = file.read().strip()
     
     try:
-        response = model.generate_content([prompt, uploaded_file])
+        response = client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=[prompt, uploaded_file]
+        )
     except Exception as e:
         print(f"Error generating content: {e}")
         return None
