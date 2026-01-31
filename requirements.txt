@@ -1,5 +1,5 @@
 # dependencies used in the project
 requests
-google-generativeai
+google-genai
 pyyaml
 python-frontmatter

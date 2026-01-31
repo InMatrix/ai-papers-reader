@@ -67,10 +67,9 @@ def test_generate_report_incremental(tmp_path):
     paper_data_path = tmp_path / "paper_data.txt"
     date_string = "2023-10-27"
 
-    mock_model = Mock()
-    # Mock responses for generate_report
-    # 1. Recommendation (response_json)
-    mock_model.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
+    # Create mock client with models attribute
+    mock_client = Mock()
+    mock_client.models.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
 
     prompt = "dummy prompt"
     topics = [{"topic": "Topic 1", "description": "Desc 1"}]
@@ -86,7 +85,7 @@ def test_generate_report_incremental(tmp_path):
         mock_pdf_to_summary.return_value = "Summary Content"
         mock_is_relevant.return_value = 0.9
 
-        generate_report(mock_model, prompt, topics, str(paper_data_path), date_string, str(report_path))
+        generate_report(mock_client, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Verify
         # 1. Summary generated
@@ -107,9 +106,10 @@ def test_generate_report_deletes_irrelevant(tmp_path):
     date_string = "2023-10-27"
     summary_path = tmp_path / "summary.md"
 
-    mock_model = Mock()
+    # Create mock client with models attribute
+    mock_client = Mock()
     # 1. Recommendation
-    mock_model.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
+    mock_client.models.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
 
     prompt = "dummy prompt"
     topics = [{"topic": "Topic 1", "description": "Desc 1"}]
@@ -127,7 +127,7 @@ def test_generate_report_deletes_irrelevant(tmp_path):
         mock_pdf_to_summary.return_value = "Summary Content"
         mock_is_relevant.return_value = 0.1
 
-        generate_report(mock_model, prompt, topics, str(paper_data_path), date_string, str(report_path))
+        generate_report(mock_client, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Verify deletion
         mock_remove.assert_called_with(str(summary_path))
@@ -140,8 +140,9 @@ def test_generate_report_saves_partial_on_error(tmp_path):
     paper_data_path = tmp_path / "paper_data.txt"
     date_string = "2023-10-27"
 
-    mock_model = Mock()
-    mock_model.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
+    # Create mock client with models attribute
+    mock_client = Mock()
+    mock_client.models.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
 
     prompt = "dummy prompt"
     topics = [{"topic": "Topic 1", "description": "Desc 1"}]
@@ -154,7 +155,7 @@ def test_generate_report_saves_partial_on_error(tmp_path):
         mock_get_path.return_value = str(tmp_path / "summary.md")
         mock_pdf_to_summary.side_effect = Exception("Quota exceeded")
 
-        generate_report(mock_model, prompt, topics, str(paper_data_path), date_string, str(report_path))
+        generate_report(mock_client, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Should still have saved initial report and potentially partial updates (though here it failed on first paper)
         assert report_path.exists()

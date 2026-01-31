@@ -35,25 +35,26 @@ def test_clean_markdown_blocks_empty_text():
 def test_upload_file_with_retry_success():
     """Test successful upload on first attempt."""
     mock_file = Mock()
-    with patch('summarize_pdf.genai.upload_file', return_value=mock_file):
+    mock_client = Mock()
+    mock_client.files.upload.return_value = mock_file
+    
+    with patch('summarize_pdf.get_client', return_value=mock_client):
         result = upload_file_with_retry('/tmp/test.pdf', 'test.pdf')
         assert result == mock_file
 
 def test_upload_file_with_retry_success_after_failure():
     """Test successful upload after one failure."""
-    from googleapiclient.errors import HttpError
-    
     mock_file = Mock()
-    mock_resp = Mock()
-    mock_resp.status = 503
     
-    # Create a mock HttpError
-    http_error = HttpError(mock_resp, b'Service Unavailable')
+    # Create a mock error with '503' in the message
+    mock_error = Exception("503 Service Unavailable")
     
-    with patch('summarize_pdf.genai.upload_file') as mock_upload:
-        # First call raises 503, second call succeeds
-        mock_upload.side_effect = [http_error, mock_file]
-        
+    mock_client = Mock()
+    mock_upload = mock_client.files.upload
+    # First call raises 503, second call succeeds
+    mock_upload.side_effect = [mock_error, mock_file]
+    
+    with patch('summarize_pdf.get_client', return_value=mock_client):
         with patch('time.sleep'):  # Mock sleep to speed up test
             result = upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)
             assert result == mock_file
@@ -61,25 +62,23 @@ def test_upload_file_with_retry_success_after_failure():
 
 def test_upload_file_with_retry_max_retries_exceeded():
     """Test that exception is raised after max retries."""
-    from googleapiclient.errors import HttpError
+    mock_error = Exception("503 Service Unavailable")
     
-    mock_resp = Mock()
-    mock_resp.status = 503
-    http_error = HttpError(mock_resp, b'Service Unavailable')
+    mock_client = Mock()
+    mock_client.files.upload.side_effect = mock_error
     
-    with patch('summarize_pdf.genai.upload_file', side_effect=http_error):
+    with patch('summarize_pdf.get_client', return_value=mock_client):
         with patch('time.sleep'):  # Mock sleep to speed up test
-            with pytest.raises(HttpError):
+            with pytest.raises(Exception):
                 upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)
 
 def test_upload_file_with_retry_non_retryable_error():
     """Test that non-retryable errors are raised immediately."""
-    from googleapiclient.errors import HttpError
+    mock_error = Exception("404 Not Found")
     
-    mock_resp = Mock()
-    mock_resp.status = 404  # Not Found - not retryable
-    http_error = HttpError(mock_resp, b'Not Found')
+    mock_client = Mock()
+    mock_client.files.upload.side_effect = mock_error
     
-    with patch('summarize_pdf.genai.upload_file', side_effect=http_error):
-        with pytest.raises(HttpError):
+    with patch('summarize_pdf.get_client', return_value=mock_client):
+        with pytest.raises(Exception):
             result = upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)
