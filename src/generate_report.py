@@ -15,6 +15,7 @@ def read_file(filename):
 
 
 def write_file(filename, content):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w") as file:
         file.write(content)
 
@@ -42,21 +43,27 @@ def update_status(paper_data_path, updates):
             "initial_report_generated": False,
             "papers_summarized": {},
             "final_report_generated": False,
-            "last_updated": ""
+            "last_updated": "",
         }
 
     # Apply updates
     if "initial_report_generated" in updates:
-        status_data[data_filename]["initial_report_generated"] = updates["initial_report_generated"]
+        status_data[data_filename]["initial_report_generated"] = updates[
+            "initial_report_generated"
+        ]
 
     if "papers_summarized" in updates:
         # Merge dictionary updates
         if "papers_summarized" not in status_data[data_filename]:
             status_data[data_filename]["papers_summarized"] = {}
-        status_data[data_filename]["papers_summarized"].update(updates["papers_summarized"])
+        status_data[data_filename]["papers_summarized"].update(
+            updates["papers_summarized"]
+        )
 
     if "final_report_generated" in updates:
-        status_data[data_filename]["final_report_generated"] = updates["final_report_generated"]
+        status_data[data_filename]["final_report_generated"] = updates[
+            "final_report_generated"
+        ]
 
     status_data[data_filename]["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -69,7 +76,7 @@ def parse_model_response(response):
     try:
         # Remove leading and trailing whitespace
         cleaned_response = response.text.strip()
-        
+
         # Remove markdown code fences if present
         # Handle ```json\n...\n``` format
         if cleaned_response.startswith("```json"):
@@ -77,45 +84,47 @@ def parse_model_response(response):
         # Handle ```\n...\n``` format
         elif cleaned_response.startswith("```"):
             cleaned_response = cleaned_response[3:]  # Remove ```
-        
+
         # Remove trailing code fence
         if cleaned_response.endswith("```"):
             cleaned_response = cleaned_response[:-3]  # Remove ```
-        
+
         # Remove any leading text before the JSON array/object starts
         # Find the first occurrence of [ or {
         start_idx = -1
         for i, char in enumerate(cleaned_response):
-            if char in ['{', '[']:
+            if char in ["{", "["]:
                 start_idx = i
                 break
-        
+
         if start_idx > 0:
             cleaned_response = cleaned_response[start_idx:]
-        
+
         # Strip again after all processing
         cleaned_response = cleaned_response.strip()
-        
+
         # Parse the cleaned response as JSON
         response_json = json.loads(cleaned_response)
     except json.JSONDecodeError as e:
         # Print detailed error information
         print(f"JSON decode error: {str(e)}")
-        
+
         # Print context around error position
         error_pos = e.pos
         start = max(0, error_pos - 40)
         end = min(len(cleaned_response), error_pos + 40)
-        print(f"Context: ...{cleaned_response[start:error_pos]}>>>ERROR HERE>>>{cleaned_response[error_pos:end]}...")
-        
+        print(
+            f"Context: ...{cleaned_response[start:error_pos]}>>>ERROR HERE>>>{cleaned_response[error_pos:end]}..."
+        )
+
         # Save the problematic response to a file for inspection
         debug_file = "error_response.txt"
         with open(debug_file, "w") as f:
             f.write(cleaned_response)
         print(f"Full response saved to '{debug_file}' for inspection")
-        
+
         raise ValueError(f"The response is not a valid JSON string: {str(e)}")
-    
+
     return response_json
 
 
@@ -132,7 +141,7 @@ Topic Description: {topic_description}
 Answer with ONLY a single number between 0 and 1 representing the relevance score. 
 Do not include any other text, explanation, or JSON formatting. 
 Just output the number, for example: 0.9"""
-    
+
     response = model.generate_content(prompt)
     # The Gemini free tier has a rate limit of 15 RPM
     time.sleep(5)
@@ -156,25 +165,32 @@ def inflate_prompt(
     """
     prompt_template = read_file(prompt_template_path)
     paper_data = read_file(paper_data_path)
-    
+
     # Read topics from YAML file
-    with open(topics_path, 'r') as file:
+    with open(topics_path, "r") as file:
         topics = yaml.safe_load(file)
-    
+
     # Convert topics to a string format suitable for the prompt
-    topics_str = "\n".join([f"{index + 1}. {topic['topic']}\n{topic['description']}" for index, topic in enumerate(topics)])
-    
+    topics_str = "\n".join(
+        [
+            f"{index + 1}. {topic['topic']}\n{topic['description']}"
+            for index, topic in enumerate(topics)
+        ]
+    )
+
     prompt = prompt_template.replace("{paper_data}", paper_data).replace(
         "{topics}", topics_str
     )
     return prompt, topics
 
 
-def generate_report(model, prompt, topics, paper_data_path, date_string, report_path, skip_summary=False):
+def generate_report(
+    model, prompt, topics, paper_data_path, date_string, report_path, skip_summary=False
+):
     # generate paper recommendations in json format
     response = model.generate_content(prompt)
     response_json = parse_model_response(response)
-    
+
     # helper to generate and save markdown
     def save_markdown(data):
         content = json_to_markdown(data, date_string)
@@ -185,12 +201,14 @@ def generate_report(model, prompt, topics, paper_data_path, date_string, report_
     # Save initial report
     markdown_content = save_markdown(response_json)
     update_status(paper_data_path, {"initial_report_generated": True})
-    
+
     if not skip_summary:
         summary_save_location = os.path.join("docs", date_string)
 
         for topic in response_json:
-            topic_description = next((t['description'] for t in topics if t['topic'] == topic['topic']), None)
+            topic_description = next(
+                (t["description"] for t in topics if t["topic"] == topic["topic"]), None
+            )
             if not topic_description:
                 print(f"Warning: Topic description not found for {topic['topic']}")
                 continue
@@ -200,33 +218,51 @@ def generate_report(model, prompt, topics, paper_data_path, date_string, report_
 
             for paper in papers_to_process:
                 try:
-                    summary_path = summarize_pdf.get_summary_path(paper["url"], summary_save_location)
-                    summary_content = summarize_pdf.pdf_to_summary(paper["url"], summary_path)
+                    summary_path = summarize_pdf.get_summary_path(
+                        paper["url"], summary_save_location
+                    )
+                    summary_content = summarize_pdf.pdf_to_summary(
+                        paper["url"], summary_path
+                    )
 
                     if summary_path and summary_content:
                         # Write summary to file
                         with open(summary_path, "w") as file:
                             file.write(summary_content)
-                        print(f"Saved a summary of the paper {paper['title']} to {summary_path}")
+                        print(
+                            f"Saved a summary of the paper {paper['title']} to {summary_path}"
+                        )
 
-                        relevance_score = is_relevant(summary_content, topic_description, model)
+                        relevance_score = is_relevant(
+                            summary_content, topic_description, model
+                        )
 
                         if relevance_score >= 0.5:
                             # Relevant: update paper details
-                            paper["summary_path"] = summary_path.replace(f"{summary_save_location}/", "")
+                            paper["summary_path"] = summary_path.replace(
+                                f"{summary_save_location}/", ""
+                            )
                             paper["summary_content"] = summary_content
-                            update_status(paper_data_path, {"papers_summarized": {paper["url"]: True}})
+                            update_status(
+                                paper_data_path,
+                                {"papers_summarized": {paper["url"]: True}},
+                            )
                         else:
                             # Irrelevant: remove from original list
-                            print(f"Dropped paper '{paper.get('title')}' from topic '{topic['topic']}' with relevance score: {relevance_score}")
+                            print(
+                                f"Dropped paper '{paper.get('title')}' from topic '{topic['topic']}' with relevance score: {relevance_score}"
+                            )
                             topic["papers"].remove(paper)
 
                             # Delete summary file
                             if os.path.exists(summary_path):
                                 os.remove(summary_path)
-                            update_status(paper_data_path, {"papers_summarized": {paper["url"]: False}})
+                            update_status(
+                                paper_data_path,
+                                {"papers_summarized": {paper["url"]: False}},
+                            )
                     else:
-                         print(f"Failed to generate summary for {paper.get('title')}")
+                        print(f"Failed to generate summary for {paper.get('title')}")
 
                 except Exception as e:
                     print(f"Error processing paper {paper.get('title')}: {e}")
@@ -257,7 +293,9 @@ def setup_argparse():
     parser = argparse.ArgumentParser(description="Generate paper report")
     parser.add_argument("--paper_data_path", help="Path to paper data file")
     parser.add_argument("--report_path", help="Path to output report file")
-    parser.add_argument("--skip_summary", action="store_true", help="Skip the summarization step")
+    parser.add_argument(
+        "--skip_summary", action="store_true", help="Skip the summarization step"
+    )
     return parser
 
 
@@ -284,20 +322,30 @@ def main():
         raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
     genai.configure(api_key=GOOGLE_API_KEY)
-    
+
     # Configure the model with JSON response format
     generation_config = {
         "response_mime_type": "application/json",
         "temperature": 0.7,
     }
-    model = genai.GenerativeModel("gemini-flash-latest", generation_config=generation_config)
+    model = genai.GenerativeModel(
+        "gemini-flash-latest", generation_config=generation_config
+    )
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
 
     # Initialize status entry
     update_status(args.paper_data_path, {})
 
-    generate_report(model, prompt, topics, args.paper_data_path, date_string, args.report_path, skip_summary=args.skip_summary)
+    generate_report(
+        model,
+        prompt,
+        topics,
+        args.paper_data_path,
+        date_string,
+        args.report_path,
+        skip_summary=args.skip_summary,
+    )
 
     print(f"Report generated and saved to {args.report_path}")
 
