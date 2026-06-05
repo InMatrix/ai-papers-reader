@@ -1090,5 +1090,27 @@
     },
     "final_report_generated": true,
     "last_updated": "2026-05-29T03:38:07"
+  },
+  "paper_metadata_2026-06-05.txt": {
+    "initial_report_generated": true,
+    "papers_summarized": {
+      "https://arxiv.org/pdf/2606.06473": true,
+      "https://arxiv.org/pdf/2605.31058": true,
+      "https://arxiv.org/pdf/2606.06447": true,
+      "https://arxiv.org/pdf/2606.03841": true,
+      "https://arxiv.org/pdf/2606.03895": true,
+      "https://arxiv.org/pdf/2606.05275": true,
+      "https://arxiv.org/pdf/2606.05112": true,
+      "https://arxiv.org/pdf/2606.00825": true,
+      "https://arxiv.org/pdf/2606.03220": true,
+      "https://arxiv.org/pdf/2606.04075": true,
+      "https://arxiv.org/pdf/2606.04923": true,
+      "https://arxiv.org/pdf/2606.03965": true,
+      "https://arxiv.org/pdf/2606.03712": true,
+      "https://arxiv.org/pdf/2606.04978": true,
+      "https://arxiv.org/pdf/2606.05645": false
+    },
+    "final_report_generated": true,
+    "last_updated": "2026-06-05T03:46:12"
   }
 }
