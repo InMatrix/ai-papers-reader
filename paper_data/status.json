@@ -1167,5 +1167,16 @@
     },
     "final_report_generated": true,
     "last_updated": "2026-07-03T02:57:28"
+  },
+  "paper_metadata_2026-07-10.txt": {
+    "initial_report_generated": true,
+    "papers_summarized": {
+      "https://arxiv.org/pdf/2607.06065": true,
+      "https://arxiv.org/pdf/2604.17248": true,
+      "https://arxiv.org/pdf/2607.01232": true,
+      "https://arxiv.org/pdf/2607.07708": true
+    },
+    "final_report_generated": true,
+    "last_updated": "2026-07-10T03:11:21"
   }
 }
