@@ -3,7 +3,7 @@ PDF summarizer using Gemini or DeepSeek models.
 
 This script generates a summary from PDF bytes. PDF downloading and local
 preprocessing live in pdf_preprocessor.py. Gemini receives the processed PDF
-directly; DeepSeek receives text extracted locally from the PDF.
+directly; DeepSeek receives layout-aware text extracted locally from the PDF.
 
 Provider/model selection is read from the tracked config.yaml file. Credentials
 are loaded from the local .env file or the process environment.
