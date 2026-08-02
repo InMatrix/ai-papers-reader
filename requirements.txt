@@ -5,3 +5,4 @@ openai
 pypdf
 pyyaml
 python-frontmatter
+python-dotenv

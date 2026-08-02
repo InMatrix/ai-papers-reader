@@ -3,12 +3,21 @@ from unittest.mock import Mock
 
 import pytest
 
-from llm_client import generate_text, resolve_model, resolve_provider
+from llm_client import generate_text, load_config, resolve_model, resolve_provider
 
 
 def test_resolve_provider_defaults_to_gemini(monkeypatch):
-    monkeypatch.delenv("LLM_PROVIDER", raising=False)
-    assert resolve_provider() == "gemini"
+    assert resolve_provider(config={}) == "gemini"
+
+
+def test_resolve_provider_uses_tracked_config():
+    assert resolve_provider(config={"provider": "deepseek"}) == "deepseek"
+
+
+def test_load_config_reads_committed_config():
+    config = load_config()
+    assert config["provider"] in {"gemini", "deepseek"}
+    assert config["model"]
 
 
 def test_resolve_provider_rejects_unknown_provider():
@@ -16,9 +25,12 @@ def test_resolve_provider_rejects_unknown_provider():
         resolve_provider("unknown")
 
 
-def test_resolve_model_uses_deepseek_default(monkeypatch):
-    monkeypatch.delenv("LLM_MODEL", raising=False)
-    assert resolve_model("deepseek") == "deepseek-v4-flash"
+def test_resolve_model_uses_deepseek_default():
+    assert resolve_model("deepseek", config={}) == "deepseek-v4-flash"
+
+
+def test_resolve_model_uses_tracked_config():
+    assert resolve_model("deepseek", config={"model": "deepseek-v4-pro"}) == "deepseek-v4-pro"
 
 
 def test_generate_text_uses_deepseek_chat_completions():

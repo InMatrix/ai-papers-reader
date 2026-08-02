@@ -1,0 +1,11 @@
+# Committed model selection. Keep API keys in .env (which is git-ignored).
+# provider: gemini
+# model: gemini-flash-latest
+
+provider: deepseek
+model: deepseek-v4-flash
+llm_timeout_seconds: 120
+pdf:
+  max_pages: 12
+  max_bytes: 20971520
+  download_timeout_seconds: 120

@@ -107,3 +107,41 @@ def test_summarize_pdf_with_deepseek_extracts_text():
     request = mock_client.chat.completions.create.call_args.kwargs
     assert request["model"] == "deepseek-v4-flash"
     assert "<paper>\nExtracted paper text\n</paper>" in request["messages"][0]["content"]
+
+
+def test_extract_pdf_text_limits_pages(monkeypatch):
+    import summarize_pdf
+
+    pages = [Mock(extract_text=lambda i=i: f"Page {i}") for i in range(3)]
+    reader = Mock(pages=pages)
+    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
+
+    assert summarize_pdf.extract_pdf_text(b"pdf", max_pages=2) == "Page 0\n\nPage 1"
+
+
+def test_truncate_pdf_keeps_small_documents(monkeypatch):
+    import importlib
+
+    summarize_pdf_module = importlib.import_module("summarize_pdf")
+    assert summarize_pdf_module.truncate_pdf(b"small", max_bytes=10) == b"small"
+
+
+def test_truncate_pdf_limits_large_documents(monkeypatch):
+    import importlib
+
+    summarize_pdf_module = importlib.import_module("summarize_pdf")
+
+    pages = [Mock() for _ in range(3)]
+    reader = Mock(pages=pages)
+    writer = Mock()
+    output = Mock()
+    output.getvalue.return_value = b"first pages"
+    writer.write.side_effect = lambda stream: None
+    monkeypatch.setattr(summarize_pdf_module, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(summarize_pdf_module, "PdfWriter", Mock(return_value=writer))
+    monkeypatch.setattr(summarize_pdf_module, "BytesIO", Mock(return_value=output))
+
+    assert summarize_pdf_module.truncate_pdf(
+        b"large", max_pages=2, max_bytes=1
+    ) == b"first pages"
+    assert writer.add_page.call_count == 2

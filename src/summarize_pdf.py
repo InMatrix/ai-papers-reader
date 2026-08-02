@@ -5,19 +5,26 @@ This script downloads a PDF from a given URL and generates a summary. Gemini
 receives the uploaded PDF directly; DeepSeek receives text extracted locally
 from the PDF.
 
-Provider selection and credentials use the same LLM_PROVIDER, LLM_MODEL,
-GOOGLE_API_KEY, and DEEPSEEK_API_KEY settings as generate_report.py.
+Provider/model selection is read from the tracked config.yaml file. Credentials
+are loaded from the local .env file or the process environment.
 """
 
 import argparse
+import os
 import requests
 import tempfile
 import frontmatter
 import re
 import time
 from io import BytesIO
-from pypdf import PdfReader
-from llm_client import create_client, generate_text, resolve_model, resolve_provider
+from pypdf import PdfReader, PdfWriter
+from llm_client import (
+    create_client,
+    generate_text,
+    load_config,
+    resolve_model,
+    resolve_provider,
+)
 
 # Initialize client lazily
 _client = None
@@ -44,7 +51,9 @@ def download_pdf(url):
     Returns:
     bytes: The content of the PDF file.
     """
-    response = requests.get(url)
+    config = load_config()
+    timeout = float(config.get("pdf", {}).get("download_timeout_seconds", 120))
+    response = requests.get(url, timeout=timeout)
     return response.content
 
 def get_summary_path(pdf_url, save_location):
@@ -135,13 +144,51 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     # If we exhausted all retries, raise the last exception
     raise last_exception
 
-def extract_pdf_text(pdf_content):
-    """Extract text for providers that do not expose a PDF upload API."""
+def extract_pdf_text(pdf_content, max_pages=None):
+    """Extract a bounded text prefix for providers without PDF upload APIs."""
+    config = load_config()
+    if max_pages is None:
+        max_pages = int(config.get("pdf", {}).get("max_pages", 12))
+    if max_pages < 1:
+        raise ValueError("DEEPSEEK_MAX_PAGES must be at least 1")
+
     reader = PdfReader(BytesIO(pdf_content))
-    text = "\n\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    pages = reader.pages[:max_pages]
+    if len(reader.pages) > max_pages:
+        print(f"Limiting DeepSeek PDF input to the first {max_pages} pages")
+    text = "\n\n".join(page.extract_text() or "" for page in pages).strip()
     if not text:
         raise ValueError("No text could be extracted from the PDF")
     return text
+
+
+def truncate_pdf(pdf_content, max_pages=None, max_bytes=None):
+    """Return the original PDF or a first-pages copy when it exceeds the cap."""
+    config = load_config()
+    pdf_config = config.get("pdf", {})
+    if max_bytes is None:
+        max_bytes = int(pdf_config.get("max_bytes", 20 * 1024 * 1024))
+    if len(pdf_content) <= max_bytes:
+        return pdf_content
+
+    if max_pages is None:
+        max_pages = int(pdf_config.get("max_pages", 12))
+    if max_pages < 1:
+        raise ValueError("MAX_PDF_PAGES must be at least 1")
+
+    reader = PdfReader(BytesIO(pdf_content))
+    writer = PdfWriter()
+    for page in reader.pages[:max_pages]:
+        writer.add_page(page)
+
+    output = BytesIO()
+    writer.write(output)
+    truncated_content = output.getvalue()
+    print(
+        f"PDF is {len(pdf_content)} bytes; limiting Gemini input to the first "
+        f"{min(max_pages, len(reader.pages))} pages ({len(truncated_content)} bytes)"
+    )
+    return truncated_content
 
 
 def summarize_pdf(pdf_content, client=None, provider=None, model=None):
@@ -171,8 +218,11 @@ def summarize_pdf(pdf_content, client=None, provider=None, model=None):
         )
         return clean_markdown_blocks(response_text)
     
+    # Gemini can process PDFs directly. Keep the complete document below the
+    # size cap, and use a first-pages PDF for unusually large documents.
+    gemini_pdf_content = truncate_pdf(pdf_content)
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
-        temp_pdf.write(pdf_content)
+        temp_pdf.write(gemini_pdf_content)
         temp_pdf.flush()
         
         # Upload the PDF file with retry logic

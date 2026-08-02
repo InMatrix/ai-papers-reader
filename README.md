@@ -16,23 +16,29 @@ AI Papers Reader is built with the following building blocks:
 
 The default set of topics AI Papers Reader currently uses to identify relevant papers is based on my research interests. You can customize it by forking the repo and editing [the prompt template](https://github.com/InMatrix/ai-papers-reader/blob/main/prompts/recommend_papers.txt).
 
-Gemini remains the default provider:
+Provider and model selection live in the committed [config.yaml](config.yaml):
 
-```bash
-export GOOGLE_API_KEY=your_key_here
-python src/generate_report.py
+```yaml
+provider: deepseek
+model: deepseek-v4-flash
 ```
 
-To use DeepSeek, install the dependencies and select the provider. `deepseek-v4-flash` is the default DeepSeek model; `LLM_MODEL` or `--model` can select another available model.
+Store credentials locally in an ignored `.env` file. Start from `.env.example`:
+
+```bash
+cp .env.example .env
+# Edit .env and set GOOGLE_API_KEY and/or DEEPSEEK_API_KEY.
+```
+
+Gemini remains the default provider. To use DeepSeek, edit `config.yaml` as shown above:
 
 ```bash
 pip install -r requirements.txt
-export LLM_PROVIDER=deepseek
-export DEEPSEEK_API_KEY=your_key_here
-export LLM_MODEL=deepseek-v4-flash  # optional
 python src/generate_report.py
 ```
 
-The equivalent CLI form is `python src/generate_report.py --provider deepseek --model deepseek-v4-pro`. DeepSeek PDF summarization extracts text locally, so scanned PDFs without a text layer are not supported.
+CLI `--provider` and `--model` flags remain available as one-off overrides. DeepSeek PDF summarization extracts text locally, so scanned PDFs without a text layer are not supported.
 
-For GitHub Actions, set the repository variable `LLM_PROVIDER` to `deepseek`, optionally set `LLM_MODEL`, and add the `DEEPSEEK_API_KEY` repository secret.
+PDF handling is bounded for reliability: DeepSeek uses the first 12 pages, while Gemini receives the full PDF up to 20 MiB and a first-12-page PDF above that threshold. Adjust `llm_timeout_seconds` and the `pdf` limits in `config.yaml` to change this behavior.
+
+For GitHub Actions, commit the desired `config.yaml` selection and add the matching API key as a repository secret (`GOOGLE_API_KEY` or `DEEPSEEK_API_KEY`).

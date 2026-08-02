@@ -4,7 +4,13 @@ import json
 import yaml
 import time
 import summarize_pdf
-from llm_client import create_client, generate_text, resolve_model, resolve_provider
+from llm_client import (
+    create_client,
+    generate_text,
+    load_config,
+    resolve_model,
+    resolve_provider,
+)
 from json_to_markdown import json_to_markdown
 
 
@@ -148,8 +154,9 @@ Topic Description: {topic_description}
 
 Answer with ONLY a single number between 0 and 1 representing the relevance score. 
 Do not include any other text, explanation, or JSON formatting. 
-Just output the number, for example: 0.9"""
+    Just output the number, for example: 0.9"""
     
+    provider = resolve_provider(provider)
     model = resolve_model(provider, model)
     response_text = generate_text(client, prompt, provider=provider, model=model)
     # The Gemini free tier has a rate limit of 15 RPM
@@ -206,6 +213,7 @@ def generate_report(
     model=None,
 ):
     # generate paper recommendations in json format
+    provider = resolve_provider(provider)
     model = resolve_model(provider, model)
     response_text = generate_text(
         client,
@@ -333,11 +341,11 @@ def setup_argparse():
     parser.add_argument(
         "--provider",
         choices=["gemini", "deepseek"],
-        help="LLM provider (default: LLM_PROVIDER or gemini)",
+        help="One-off provider override (default: config.yaml)",
     )
     parser.add_argument(
         "--model",
-        help="Model ID (default: LLM_MODEL or the provider default)",
+        help="One-off model override (default: config.yaml)",
     )
     return parser
 
@@ -360,8 +368,9 @@ def main():
 
     prompt_template_path = "prompts/recommend_papers.txt"
 
-    provider = resolve_provider(args.provider)
-    model = resolve_model(provider, args.model)
+    config = load_config()
+    provider = resolve_provider(args.provider, config=config)
+    model = resolve_model(provider, args.model, config=config)
     client = create_client(provider)
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
