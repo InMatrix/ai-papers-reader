@@ -49,7 +49,7 @@ Data flow:
 - **Topics/Filtering**: Edit `prompts/recommend_papers.txt` to customize which papers are selected
 - **LLM**: `config.yaml` selects the provider and model; CLI flags can override them for one run
 - **API Key**: `.env` (git-ignored) stores `GOOGLE_API_KEY` and/or `DEEPSEEK_API_KEY`
-- **PDF limits**: `config.yaml` controls `llm_timeout_seconds` and the PDF `max_pages`, `max_bytes`, and `download_timeout_seconds` settings
+- **PDF limits**: `config.yaml` controls `llm_timeout_seconds`, the PDF `max_pages`, `max_bytes`, and `download_timeout_seconds` settings, and section-aware extraction before configurable References/Bibliography headings for oversized PDFs
 - **Python Version**: 3.12
 
 ## CI/CD

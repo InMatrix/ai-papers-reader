@@ -7,5 +7,10 @@ model: deepseek-v4-flash
 llm_timeout_seconds: 120
 pdf:
   max_pages: 12
-  max_bytes: 20971520
+  max_bytes: 15728640
   download_timeout_seconds: 120
+  stop_at_references: true
+  references_headings:
+    - references
+    - bibliography
+    - works cited

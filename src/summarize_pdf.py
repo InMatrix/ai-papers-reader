@@ -30,6 +30,10 @@ from llm_client import (
 _client = None
 _client_provider = None
 
+DEFAULT_MAX_PAGES = 12
+DEFAULT_MAX_BYTES = 15 * 1024 * 1024
+DEFAULT_REFERENCE_HEADINGS = ("references", "bibliography", "works cited")
+
 def get_client(provider=None):
     """
     Get or create the generative AI client.
@@ -144,46 +148,185 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     # If we exhausted all retries, raise the last exception
     raise last_exception
 
-def extract_pdf_text(pdf_content, max_pages=None):
-    """Extract a bounded text prefix for providers without PDF upload APIs."""
-    config = load_config()
+def _pdf_config(config=None):
+    """Return the PDF configuration as a mapping."""
+    config = config if config is not None else load_config()
+    pdf_config = config.get("pdf", {}) or {}
+    if not isinstance(pdf_config, dict):
+        raise ValueError("The pdf config must be a YAML mapping")
+    return pdf_config
+
+
+def _reference_headings(pdf_config):
+    """Return normalized section names that indicate the references section."""
+    headings = pdf_config.get("references_headings", DEFAULT_REFERENCE_HEADINGS)
+    if isinstance(headings, str):
+        headings = [headings]
+    if not isinstance(headings, (list, tuple, set)):
+        raise ValueError("pdf.references_headings must be a list of strings")
+    return {
+        re.sub(r"\s+", " ", str(heading)).strip().casefold()
+        for heading in headings
+        if str(heading).strip()
+    }
+
+
+def _normalize_heading(line):
+    """Normalize a PDF text line for section-heading matching."""
+    line = re.sub(r"\s+", " ", line).strip()
+    # Academic papers commonly number this section as "6 References" or
+    # "6. References". Roman numeral prefixes are supported as well.
+    line = re.sub(
+        r"^(?:(?:\d+(?:\.\d+)*)|(?:[IVXLCDM]+))[.)]?\s+",
+        "",
+        line,
+        flags=re.IGNORECASE,
+    )
+    return line.rstrip(":").strip().casefold()
+
+
+def _reference_heading_position(text, headings):
+    """Return the character offset of a references heading, if present."""
+    offset = 0
+    for line in text.splitlines(keepends=True):
+        if _normalize_heading(line.rstrip("\r\n")) in headings:
+            return offset
+        offset += len(line)
+    return None
+
+
+def _page_text(page):
+    """Extract text from one page, treating malformed/scanned pages as empty."""
+    try:
+        text = page.extract_text() or ""
+    except Exception as error:
+        print(f"Unable to extract text from PDF page: {error}")
+        return ""
+    return text if isinstance(text, str) else ""
+
+
+def find_references_page(reader, pdf_config=None):
+    """Return the zero-based page containing a References-style heading."""
+    if pdf_config is None:
+        pdf_config = _pdf_config()
+    elif not isinstance(pdf_config, dict):
+        raise ValueError("The pdf config must be a YAML mapping")
+    elif "pdf" in pdf_config:
+        # Accept a complete config mapping for callers using this helper
+        # directly, while internal callers pass the unwrapped PDF settings.
+        pdf_config = _pdf_config(pdf_config)
+    if not pdf_config.get("stop_at_references", True):
+        return None
+
+    headings = _reference_headings(pdf_config)
+    if not headings:
+        return None
+
+    for page_number, page in enumerate(reader.pages):
+        if _reference_heading_position(_page_text(page), headings) is not None:
+            return page_number
+    return None
+
+
+def _write_pdf_pages(reader, page_count):
+    """Create a PDF containing the first ``page_count`` pages."""
+    writer = PdfWriter()
+    for page in reader.pages[:page_count]:
+        writer.add_page(page)
+
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
+def extract_pdf_text(pdf_content, max_pages=None, max_bytes=None):
+    """Extract full text below the byte cap; trim oversized papers safely."""
+    pdf_config = _pdf_config()
+    max_pages_was_explicit = max_pages is not None
     if max_pages is None:
-        max_pages = int(config.get("pdf", {}).get("max_pages", 12))
+        max_pages = int(pdf_config.get("max_pages", DEFAULT_MAX_PAGES))
     if max_pages < 1:
-        raise ValueError("DEEPSEEK_MAX_PAGES must be at least 1")
+        raise ValueError("pdf.max_pages must be at least 1")
+    if max_bytes is None:
+        max_bytes = int(pdf_config.get("max_bytes", DEFAULT_MAX_BYTES))
+    if max_bytes < 1:
+        raise ValueError("pdf.max_bytes must be at least 1")
 
     reader = PdfReader(BytesIO(pdf_content))
-    pages = reader.pages[:max_pages]
-    if len(reader.pages) > max_pages:
-        print(f"Limiting DeepSeek PDF input to the first {max_pages} pages")
-    text = "\n\n".join(page.extract_text() or "" for page in pages).strip()
+    page_count = len(reader.pages)
+    # An explicit function argument remains a deliberate one-off cap. The
+    # committed config cap only applies to oversized PDFs, as documented.
+    page_limit = page_count
+    if max_pages_was_explicit or len(pdf_content) > max_bytes:
+        page_limit = min(page_limit, max_pages)
+
+    oversized = len(pdf_content) > max_bytes
+    headings = _reference_headings(pdf_config) if oversized else set()
+    extracted_pages = []
+    references_found = False
+    for page_number, page in enumerate(reader.pages[:page_limit]):
+        page_text = _page_text(page)
+        heading_position = None
+        if oversized and pdf_config.get("stop_at_references", True) and headings:
+            heading_position = _reference_heading_position(page_text, headings)
+        if heading_position is not None:
+            # Preserve an introduction or conclusion that shares a page with
+            # the heading, while excluding the references themselves.
+            page_text = page_text[:heading_position]
+            references_found = True
+        if page_text.strip():
+            extracted_pages.append(page_text.strip())
+        if heading_position is not None:
+            break
+
+    if references_found:
+        print(f"Stopping PDF text extraction before References on page {page_number + 1}")
+    elif page_limit < page_count:
+        print(f"Limiting PDF text input to the first {page_limit} pages")
+
+    text = "\n\n".join(extracted_pages).strip()
     if not text:
         raise ValueError("No text could be extracted from the PDF")
     return text
 
 
 def truncate_pdf(pdf_content, max_pages=None, max_bytes=None):
-    """Return the original PDF or a first-pages copy when it exceeds the cap."""
-    config = load_config()
-    pdf_config = config.get("pdf", {})
+    """Remove references and apply size/page limits when needed."""
+    pdf_config = _pdf_config()
     if max_bytes is None:
-        max_bytes = int(pdf_config.get("max_bytes", 20 * 1024 * 1024))
-    if len(pdf_content) <= max_bytes:
+        max_bytes = int(pdf_config.get("max_bytes", DEFAULT_MAX_BYTES))
+    if max_bytes < 1:
+        raise ValueError("pdf.max_bytes must be at least 1")
+    if max_pages is None:
+        max_pages = int(pdf_config.get("max_pages", DEFAULT_MAX_PAGES))
+    if max_pages < 1:
+        raise ValueError("pdf.max_pages must be at least 1")
+
+    oversized = len(pdf_content) > max_bytes
+    if not oversized:
         return pdf_content
 
-    if max_pages is None:
-        max_pages = int(pdf_config.get("max_pages", 12))
-    if max_pages < 1:
-        raise ValueError("MAX_PDF_PAGES must be at least 1")
-
     reader = PdfReader(BytesIO(pdf_content))
-    writer = PdfWriter()
-    for page in reader.pages[:max_pages]:
-        writer.add_page(page)
+    references_page = find_references_page(reader, pdf_config)
 
-    output = BytesIO()
-    writer.write(output)
-    truncated_content = output.getvalue()
+    # Prefer the complete paper body when a References heading is detected.
+    # If that still exceeds the byte cap, fall back to the configured hard
+    # page limit. A heading on page zero cannot be represented without
+    # rewriting page content, so it uses the same safe fallback.
+    if references_page is not None and references_page > 0:
+        body_content = _write_pdf_pages(reader, references_page)
+        if len(body_content) <= max_bytes:
+            print(
+                f"PDF is {len(pdf_content)} bytes; excluding References and "
+                f"keeping the first {references_page} pages ({len(body_content)} bytes)"
+            )
+            return body_content
+        print(
+            f"The pre-References PDF is {len(body_content)} bytes; "
+            f"applying the {max_pages}-page fallback"
+        )
+
+    truncated_content = _write_pdf_pages(reader, min(max_pages, len(reader.pages)))
     print(
         f"PDF is {len(pdf_content)} bytes; limiting Gemini input to the first "
         f"{min(max_pages, len(reader.pages))} pages ({len(truncated_content)} bytes)"
