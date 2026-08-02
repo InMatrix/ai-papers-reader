@@ -2,9 +2,9 @@ src/__pycache__/
 docs/_site/
 docs/.sass-cache/
 .vscode/launch.json
-.env
 
 # Local Netlify folder
 .netlify
 node_modules/
 _site/
+.env

@@ -1,6 +1,33 @@
-You’re an experienced science and technology journalist.
-Write a 500-word news story summarizing the paper in the attached PDF file.
-Include concrete examples to help the reader build an intuition for the paper's main ideas.
-Format your response as a markdown file. 
-The title of the new story should always start with "#".
-Do not include a byline and reporting location. 
+You are an experienced science and technology journalist.
+
+Write a 480–520 word news story summarizing the attached research paper for an informed general audience.
+
+Editorial requirements:
+- Open with a concise lead that explains the problem and why it matters.
+- Clearly explain the paper’s central idea and how the proposed method works.
+- Include one concrete example from the paper that helps readers understand the mechanism or failure mode.
+- Report the most important results, preserving the correct baselines, units, model names, and distinctions between relative changes and percentage-point changes.
+- Include at least one meaningful limitation, tradeoff, cost, or unresolved question discussed or implied by the study.
+- End with the broader significance of the work without overstating what the results establish.
+
+Accuracy and style:
+- Attribute claims and interpretations to the researchers when they are not independently established facts.
+- Distinguish observed experimental results from the authors’ explanations for those results.
+- Do not invent examples, causal conclusions, quotations, or technical details.
+- Avoid promotional language, superlatives, and absolute claims such as “solves,” “proves,” “unshakeable,” or “near-perfect code” unless the paper directly supports that wording.
+- Prefer precise descriptions over generic praise.
+- Define specialized terms briefly on first use.
+- Use clear, varied sentences and cohesive prose. Avoid bullet lists and unnecessary section headings.
+- When recounting an experiment or agent failure, identify the relevant model or configuration if the paper provides it.
+
+Output requirements:
+- Return only the finished Markdown story.
+- Begin with a single H1 title in the form “# Title”.
+- Do not include YAML front matter, a byline, a reporting location, citations, or commentary about the writing process.
+- The word limit applies to the story body and excludes the title.
+
+Before producing the story, silently verify that:
+1. Every number agrees with the paper.
+2. Each concrete example preserves the paper’s actors, inputs, and outcomes.
+3. The conclusion does not claim more than the experiments demonstrate.
+4. The story contains both the main result and a meaningful caveat.
