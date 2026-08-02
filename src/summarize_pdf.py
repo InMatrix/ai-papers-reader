@@ -239,6 +239,23 @@ def _write_pdf_pages(reader, page_count):
     return output.getvalue()
 
 
+def _fit_pdf_to_byte_limit(reader, max_pages, max_bytes):
+    """Keep dropping trailing pages until the generated PDF fits the cap."""
+    page_count = min(max_pages, len(reader.pages))
+    if page_count == 0:
+        return b"", 0
+    last_content = None
+    for kept_pages in range(page_count, 0, -1):
+        candidate = _write_pdf_pages(reader, kept_pages)
+        last_content = candidate
+        if len(candidate) <= max_bytes:
+            return candidate, kept_pages
+
+    # A single page can itself exceed the configured cap. It is still the
+    # smallest useful document and is preferable to returning no PDF at all.
+    return last_content, 1
+
+
 def extract_pdf_text(pdf_content, max_pages=None, max_bytes=None):
     """Extract full text below the byte cap; trim oversized papers safely."""
     pdf_config = _pdf_config()
@@ -326,11 +343,19 @@ def truncate_pdf(pdf_content, max_pages=None, max_bytes=None):
             f"applying the {max_pages}-page fallback"
         )
 
-    truncated_content = _write_pdf_pages(reader, min(max_pages, len(reader.pages)))
-    print(
-        f"PDF is {len(pdf_content)} bytes; limiting Gemini input to the first "
-        f"{min(max_pages, len(reader.pages))} pages ({len(truncated_content)} bytes)"
+    truncated_content, kept_pages = _fit_pdf_to_byte_limit(
+        reader, max_pages, max_bytes
     )
+    if len(truncated_content) <= max_bytes:
+        print(
+            f"PDF is {len(pdf_content)} bytes; limiting Gemini input to the first "
+            f"{kept_pages} pages ({len(truncated_content)} bytes)"
+        )
+    else:
+        print(
+            f"Even the first page is {len(truncated_content)} bytes, above the "
+            f"{max_bytes}-byte limit; keeping the smallest available PDF"
+        )
     return truncated_content
 
 

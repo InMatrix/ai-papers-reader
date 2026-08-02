@@ -227,6 +227,38 @@ def test_truncate_pdf_prefers_body_before_references(monkeypatch):
     assert [len(writer.pages) for writer in FakeWriter.instances] == [1]
 
 
+def test_truncate_pdf_drops_trailing_pages_until_under_limit(monkeypatch):
+    import summarize_pdf
+
+    pages = [Mock(), Mock()]
+    reader = Mock(pages=pages)
+
+    class FakeWriter:
+        instances = []
+
+        def __init__(self):
+            self.pages = []
+            FakeWriter.instances.append(self)
+
+        def add_page(self, page):
+            self.pages.append(page)
+
+        def write(self, stream):
+            # Two pages are too large; one page fits.
+            stream.write(b"x" * (2 * len(self.pages)))
+
+    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(summarize_pdf, "PdfWriter", FakeWriter)
+    monkeypatch.setattr(
+        summarize_pdf,
+        "load_config",
+        lambda: {"pdf": {"max_bytes": 3, "max_pages": 2}},
+    )
+
+    assert summarize_pdf.truncate_pdf(b"large", max_bytes=3, max_pages=2) == b"xx"
+    assert [len(writer.pages) for writer in FakeWriter.instances] == [2, 1]
+
+
 def test_truncate_pdf_keeps_small_documents(monkeypatch):
     import importlib
 
@@ -252,4 +284,4 @@ def test_truncate_pdf_limits_large_documents(monkeypatch):
     assert summarize_pdf_module.truncate_pdf(
         b"large", max_pages=2, max_bytes=1
     ) == b"first pages"
-    assert writer.add_page.call_count == 2
+    assert writer.add_page.call_count == 3

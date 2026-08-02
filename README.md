@@ -39,6 +39,6 @@ python src/generate_report.py
 
 CLI `--provider` and `--model` flags remain available as one-off overrides. DeepSeek PDF summarization extracts text locally, so scanned PDFs without a text layer are not supported.
 
-PDF handling is bounded for reliability: both providers receive the complete file when it is under the configured 15 MiB default. For oversized PDFs, text extraction/PDF upload first tries the complete body before a configurable References/Bibliography heading, then falls back to the configured page limit if it is still too large. Adjust `llm_timeout_seconds` and the `pdf` limits in `config.yaml` to change this behavior. Set `pdf.stop_at_references` to `false` or customize `pdf.references_headings` when needed.
+PDF handling is bounded for reliability: both providers receive the complete file when it is under the configured 15 MiB default. For oversized PDFs, text extraction/PDF upload first tries the complete body before a configurable References/Bibliography heading, then drops trailing pages one at a time from the configured page limit until the generated PDF fits. Adjust `llm_timeout_seconds` and the `pdf` limits in `config.yaml` to change this behavior. Set `pdf.stop_at_references` to `false` or customize `pdf.references_headings` when needed.
 
 For GitHub Actions, commit the desired `config.yaml` selection and add the matching API key as a repository secret (`GOOGLE_API_KEY` or `DEEPSEEK_API_KEY`).
