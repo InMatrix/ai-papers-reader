@@ -6,11 +6,6 @@ provider: deepseek
 model: deepseek-v4-flash
 llm_timeout_seconds: 120
 pdf:
-  layout_aware: true
-  column_gap_min_points: 18
-  column_gap_ratio: 0.04
-  column_min_lines: 3
-  line_y_tolerance: 3
   max_pages: 12
   max_bytes: 15728640
   download_timeout_seconds: 120

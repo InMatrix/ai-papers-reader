@@ -3,7 +3,6 @@ requests
 google-genai
 openai
 pypdf
-pdfplumber
 pyyaml
 python-frontmatter
 python-dotenv

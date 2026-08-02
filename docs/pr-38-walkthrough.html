@@ -244,7 +244,7 @@ DEEPSEEK_API_KEY=...</code></pre>
             <tr>
               <td><span class="provider-name deepseek">DeepSeek</span><br><code>deepseek-v4-flash</code></td>
               <td>OpenAI-compatible client<br><code>chat.completions.create()</code></td>
-              <td>Extracts layout-aware local text, reading clear two-column pages left then right, and wraps it in <code>&lt;paper&gt;</code> tags. Scanned PDFs without a text layer are unsupported.</td>
+              <td>Extracts local text and wraps it in <code>&lt;paper&gt;</code> tags. Scanned PDFs without a text layer are unsupported.</td>
               <td>Reads <code>choices[0].message.content</code>.</td>
             </tr>
           </tbody>
@@ -324,7 +324,7 @@ DEEPSEEK_API_KEY=...</code></pre>
         <p>The implementation and the end-to-end report path were exercised on the current branch before review.</p>
       </div>
       <div class="checklist">
-        <div class="panel check"><span class="mark">✓</span><p><strong>40 tests passed.</strong><br>Provider behavior, layout-aware PDF preprocessing, download retries, and summarization paths are covered.</p></div>
+        <div class="panel check"><span class="mark">✓</span><p><strong>36 tests passed.</strong><br>Provider behavior, PDF preprocessing, download retries, and summarization paths are covered.</p></div>
         <div class="panel check"><span class="mark">✓</span><p><strong>Compile and diff checks passed.</strong><br>Python sources compile and the working tree passes whitespace validation.</p></div>
         <div class="panel check"><span class="mark">✓</span><p><strong>Large-paper path exercised.</strong><br>The regenerated 2026-08-02 report processed 12 summaries from 14 candidates; two were intentionally filtered by relevance.</p></div>
         <div class="panel check"><span class="mark">✓</span><p><strong>Preview deployed.</strong><br><a href="https://deploy-preview-38--ai-papers-reader.netlify.app">Open the Netlify deploy preview ↗</a></p></div>
@@ -342,13 +342,13 @@ DEEPSEEK_API_KEY=...</code></pre>
       <div class="grid-2">
         <article class="panel card"><span class="tag">configuration</span><h3><a href="../config.yaml">config.yaml</a></h3><p>Provider/model choice, LLM timeout, PDF byte/page limits, references handling, and download retry settings.</p></article>
         <article class="panel card"><span class="tag">provider boundary</span><h3><a href="../src/llm_client.py">src/llm_client.py</a></h3><p>Provider validation, compatible model resolution, credential loading, client creation, and normalized text generation.</p></article>
-        <article class="panel card"><span class="tag">PDF path</span><h3><a href="../src/pdf_preprocessor.py">src/pdf_preprocessor.py</a></h3><p>Resilient streaming download, layout-aware column extraction, References-aware trimming, and size/page limits.</p></article>
+        <article class="panel card"><span class="tag">PDF path</span><h3><a href="../src/pdf_preprocessor.py">src/pdf_preprocessor.py</a></h3><p>Resilient streaming download, References-aware extraction, and size/page trimming.</p></article>
         <article class="panel card"><span class="tag">orchestration</span><h3><a href="../src/summarize_pdf.py">src/summarize_pdf.py</a> · <a href="../src/generate_report.py">src/generate_report.py</a></h3><p>Provider-specific handoff and the existing report-generation loop.</p></article>
       </div>
     </section>
 
     <footer>
-      Generated for <a href="https://github.com/InMatrix/ai-papers-reader/pull/38">InMatrix/ai-papers-reader#38</a>. Walkthrough reflects the branch state after the provider override fix, schedule update, and layout-aware DeepSeek extraction. Source files are linked relative to this page.
+      Generated for <a href="https://github.com/InMatrix/ai-papers-reader/pull/38">InMatrix/ai-papers-reader#38</a>. Walkthrough reflects the branch state after the provider override fix and schedule update. Source files are linked relative to this page.
     </footer>
   </main>
 </body>
