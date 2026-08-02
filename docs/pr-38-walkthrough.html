@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PR #38 walkthrough · AI Papers Reader</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2e;
+      --panel-2: #18233b;
+      --ink: #edf3ff;
+      --muted: #aab7d4;
+      --faint: #7281a2;
+      --line: #2b3a5e;
+      --cyan: #66e3dc;
+      --blue: #8db5ff;
+      --amber: #ffd28a;
+      --green: #8de1a7;
+      --pink: #f6a8d7;
+      --shadow: 0 18px 55px rgba(0, 0, 0, .28);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(102, 227, 220, .12), transparent 34rem),
+        radial-gradient(circle at 92% 8%, rgba(141, 181, 255, .13), transparent 30rem),
+        var(--bg);
+      color: var(--ink);
+      font: 16px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--cyan); }
+    a:hover { color: #b6fffa; }
+    code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    code { color: var(--amber); }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+
+    header { padding: 76px 0 54px; }
+    .eyebrow {
+      color: var(--cyan);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(2.5rem, 6vw, 5.7rem); letter-spacing: -.065em; max-width: 900px; margin-top: 14px; }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.5rem); letter-spacing: -.035em; }
+    h3 { font-size: 1.12rem; }
+    .lede { color: var(--muted); font-size: 1.16rem; max-width: 760px; margin: 24px 0 0; }
+    .hero-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .pill, .button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      font-size: .88rem;
+      text-decoration: none;
+    }
+    .pill { color: var(--muted); background: rgba(18, 26, 46, .72); }
+    .pill strong { color: var(--green); }
+    .button { color: var(--bg); background: var(--cyan); border-color: var(--cyan); font-weight: 800; }
+    .button:hover { color: var(--bg); background: #a5fff9; }
+
+    section { margin: 30px 0 86px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .section-head p { color: var(--muted); max-width: 600px; margin: 0; }
+    .panel {
+      background: linear-gradient(145deg, rgba(24, 35, 59, .92), rgba(18, 26, 46, .92));
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 34px; }
+    .stat { padding: 20px; }
+    .stat b { display: block; font-size: 1.45rem; color: var(--ink); }
+    .stat span { color: var(--faint); font-size: .86rem; }
+
+    .flow { display: grid; grid-template-columns: repeat(7, 1fr); align-items: stretch; gap: 10px; }
+    .flow-node { position: relative; padding: 18px 15px; min-height: 128px; display: flex; flex-direction: column; justify-content: space-between; }
+    .flow-node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -20px;
+      top: 43%;
+      color: var(--cyan);
+      font-size: 1.35rem;
+      z-index: 2;
+    }
+    .flow-node .number { color: var(--cyan); font: .78rem "SFMono-Regular", monospace; }
+    .flow-node strong { display: block; font-size: 1rem; line-height: 1.25; }
+    .flow-node small { color: var(--faint); font: .75rem "SFMono-Regular", monospace; }
+    .callout { padding: 20px 24px; margin-top: 18px; border-left: 3px solid var(--cyan); color: var(--muted); }
+    .callout strong { color: var(--ink); }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .card { padding: 26px; }
+    .card h3 { margin-bottom: 10px; }
+    .card p { color: var(--muted); margin: 0; }
+    .tag { display: inline-block; color: var(--blue); font: .78rem "SFMono-Regular", monospace; margin-bottom: 13px; }
+    .list { margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
+    .list li + li { margin-top: 7px; }
+
+    .provider-table { width: 100%; border-collapse: collapse; overflow: hidden; }
+    .provider-table th, .provider-table td { padding: 17px 20px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    .provider-table th { color: var(--faint); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }
+    .provider-table tr:last-child td { border-bottom: 0; }
+    .provider-name { font-weight: 800; color: var(--ink); }
+    .provider-name.gemini { color: var(--blue); }
+    .provider-name.deepseek { color: var(--pink); }
+
+    .decision { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .decision-step { display: grid; grid-template-columns: 44px 1fr; gap: 15px; align-items: start; padding: 19px 22px; }
+    .decision-step .num { color: var(--bg); background: var(--cyan); width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; font-weight: 900; }
+    .decision-step p { color: var(--muted); margin: 5px 0 0; }
+    .decision-step em { color: var(--amber); font-style: normal; }
+
+    pre { white-space: pre-wrap; overflow-x: auto; margin: 16px 0 0; padding: 20px; border-radius: 14px; background: #0a0f1c; border: 1px solid #202d49; color: #d9e7ff; font-size: .86rem; line-height: 1.6; }
+    .before { border-left: 3px solid #ff9c9c; }
+    .after { border-left: 3px solid var(--green); }
+    .label { color: var(--faint); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; }
+
+    .timeline { border-left: 1px solid var(--line); margin-left: 13px; padding-left: 28px; }
+    .timeline-item { position: relative; padding-bottom: 25px; }
+    .timeline-item::before { content: ""; position: absolute; left: -35px; top: 8px; width: 13px; height: 13px; border: 3px solid var(--bg); border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 1px var(--cyan); }
+    .timeline-item h3 { margin-bottom: 4px; }
+    .timeline-item p { margin: 0; color: var(--muted); }
+    .timeline-item code { font-size: .85rem; }
+
+    .checklist { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .check { padding: 18px 20px; display: flex; gap: 13px; align-items: start; }
+    .check .mark { color: var(--green); font-size: 1.15rem; line-height: 1.4; }
+    .check p { margin: 0; color: var(--muted); }
+    footer { border-top: 1px solid var(--line); padding: 28px 0 56px; color: var(--faint); font-size: .9rem; }
+
+    @media (max-width: 900px) {
+      .flow { grid-template-columns: repeat(2, 1fr); }
+      .flow-node:not(:last-child)::after { display: none; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 26px, 560px); }
+      header { padding-top: 48px; }
+      .grid-2, .checklist, .stats { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 12px; }
+      .provider-table { font-size: .9rem; }
+      .provider-table th, .provider-table td { padding: 13px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="eyebrow">AI Papers Reader · PR #38</div>
+      <h1>Add DeepSeek model support.</h1>
+      <p class="lede">A visual walkthrough of the provider-neutral LLM layer, resilient PDF pipeline, scheduled publishing flow, and the review fix that keeps Gemini and DeepSeek model selection compatible.</p>
+      <div class="hero-row">
+        <span class="pill"><strong>Ready for review</strong></span>
+        <span class="pill">base <code>main</code></span>
+        <span class="pill">head <code>agent/add-deepseek-support</code></span>
+        <a class="button" href="https://github.com/InMatrix/ai-papers-reader/pull/38">Open PR ↗</a>
+      </div>
+      <div class="stats">
+        <div class="panel stat"><b>2 providers</b><span>Gemini + DeepSeek</span></div>
+        <div class="panel stat"><b>15 MiB</b><span>default PDF byte cap</span></div>
+        <div class="panel stat"><b>12 pages</b><span>oversized PDF fallback</span></div>
+        <div class="panel stat"><b>36 passed</b><span>latest local test run</span></div>
+      </div>
+    </header>
+
+    <section id="overview">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">01 · The big picture</div>
+          <h2>One pipeline, two model backends.</h2>
+        </div>
+        <p>The report generator keeps topic selection and publishing unchanged. Only the provider boundary and the PDF handoff vary by model.</p>
+      </div>
+      <div class="flow">
+        <div class="panel flow-node"><span class="number">01</span><strong>Daily Papers API</strong><small>fetch_papers.py</small></div>
+        <div class="panel flow-node"><span class="number">02</span><strong>Metadata file</strong><small>paper_data/*.txt</small></div>
+        <div class="panel flow-node"><span class="number">03</span><strong>Topic ranking</strong><small>generate_report.py</small></div>
+        <div class="panel flow-node"><span class="number">04</span><strong>Provider adapter</strong><small>llm_client.py</small></div>
+        <div class="panel flow-node"><span class="number">05</span><strong>PDF preparation</strong><small>pdf_preprocessor.py</small></div>
+        <div class="panel flow-node"><span class="number">06</span><strong>Markdown report</strong><small>docs/YYYY-MM-DD</small></div>
+        <div class="panel flow-node"><span class="number">07</span><strong>Netlify preview</strong><small>static site</small></div>
+      </div>
+      <div class="panel callout"><strong>Core idea:</strong> <code>generate_report.py</code> asks for text generation through <code>generate_text()</code>; it no longer needs to know whether the request is going to Gemini’s SDK or DeepSeek’s OpenAI-compatible endpoint.</div>
+    </section>
+
+    <section id="configuration">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">02 · Configuration</div>
+          <h2>Public choices in Git; secrets stay local.</h2>
+        </div>
+        <p>Provider and model selection are reviewable. API keys are loaded from <code>.env</code> locally or GitHub Actions secrets in CI.</p>
+      </div>
+      <div class="grid-2">
+        <article class="panel card">
+          <span class="tag">config.yaml</span>
+          <h3>Committed model selection</h3>
+          <pre><code>provider: deepseek
+model: deepseek-v4-flash
+llm_timeout_seconds: 120</code></pre>
+          <p>Switching back to Gemini is a tracked, one-line configuration change rather than a code rewrite.</p>
+        </article>
+        <article class="panel card">
+          <span class="tag">.env.example → .env</span>
+          <h3>Ignored credentials</h3>
+          <pre><code>GOOGLE_API_KEY=...
+DEEPSEEK_API_KEY=...</code></pre>
+          <p><code>load_dotenv()</code> supports local runs without overwriting credentials injected by the shell or Actions.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="providers">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">03 · Provider boundary</div>
+          <h2>Same prompt contract, different transport.</h2>
+        </div>
+        <p><code>src/llm_client.py</code> normalizes provider selection, credentials, model defaults, and response extraction.</p>
+      </div>
+      <div class="panel" style="overflow: hidden">
+        <table class="provider-table">
+          <thead><tr><th>Provider</th><th>Client and request</th><th>PDF input</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="provider-name gemini">Gemini</span><br><code>gemini-flash-latest</code></td>
+              <td>Google GenAI client<br><code>client.models.generate_content()</code></td>
+              <td>Uploads a bounded PDF file. Full file is retained below the cap.</td>
+              <td>Reads <code>response.text</code>.</td>
+            </tr>
+            <tr>
+              <td><span class="provider-name deepseek">DeepSeek</span><br><code>deepseek-v4-flash</code></td>
+              <td>OpenAI-compatible client<br><code>chat.completions.create()</code></td>
+              <td>Extracts local text and wraps it in <code>&lt;paper&gt;</code> tags. Scanned PDFs without a text layer are unsupported.</td>
+              <td>Reads <code>choices[0].message.content</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="pdf">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">04 · PDF reliability</div>
+          <h2>Download once, trim only when needed.</h2>
+        </div>
+        <p>All PDF controls are in <code>src/pdf_preprocessor.py</code> and can be tuned in the <code>pdf:</code> section of <code>config.yaml</code>.</p>
+      </div>
+      <div class="decision">
+        <div class="panel decision-step"><span class="num">1</span><div><h3>Stream the download</h3><p>Chunked requests use separate connect/read timeouts, retry transient HTTP failures, back off exponentially, and resume partial responses with a <code>Range</code> header.</p></div></div>
+        <div class="panel decision-step"><span class="num">2</span><div><h3>Check the original byte size</h3><p>If the PDF is under <em>15 MiB</em>, both providers get the complete document path: Gemini receives the complete PDF and DeepSeek extracts the complete text.</p></div></div>
+        <div class="panel decision-step"><span class="num">3</span><div><h3>Find the paper body</h3><p>For oversized files, the extractor recognizes configurable headings such as <code>References</code>, <code>Bibliography</code>, and <code>Works Cited</code>, then stops before that section when possible.</p></div></div>
+        <div class="panel decision-step"><span class="num">4</span><div><h3>Apply the hard fallback</h3><p>If the body still exceeds the byte cap, retain at most <em>12 pages</em>, then drop trailing pages backward until the generated PDF fits. A single oversized first page is retained as the smallest useful input.</p></div></div>
+      </div>
+    </section>
+
+    <section id="override-fix">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">05 · Review fix</div>
+          <h2>Provider-only overrides now stay compatible.</h2>
+        </div>
+        <p>The latest review caught a subtle configuration collision: a committed DeepSeek model could leak into a one-off Gemini run.</p>
+      </div>
+      <div class="grid-2">
+        <article class="panel card">
+          <div class="label">Before</div>
+          <pre class="before"><code>config.yaml:
+  provider: deepseek
+  model: deepseek-v4-flash
+
+--provider gemini
+→ Gemini client + DeepSeek model ID
+→ request can fail</code></pre>
+        </article>
+        <article class="panel card">
+          <div class="label">After</div>
+          <pre class="after"><code>--provider gemini
+→ gemini-flash-latest
+
+--provider gemini \
+  --model gemini-2.5-flash
+→ explicit model wins</code></pre>
+        </article>
+      </div>
+      <div class="panel callout"><strong>Resolution rule:</strong> an explicit model override wins; otherwise the committed model is used only when its configured provider matches the selected provider. A mismatch falls back to that provider’s default.</div>
+    </section>
+
+    <section id="automation">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">06 · Automation</div>
+          <h2>Weekly publishing stays hands-off.</h2>
+        </div>
+        <p>The workflow still fetches, generates, indexes, commits, and pushes. Its schedule now avoids DeepSeek’s announced Beijing-time peak windows.</p>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item"><h3>Friday 12:00 UTC / 20:00 Beijing</h3><p><code>.github/workflows/fetch_generate_publish.yml</code> starts outside the 09:00–12:00 and 14:00–18:00 Beijing peak periods.</p></div>
+        <div class="timeline-item"><h3>Fetch and generate</h3><p>Actions installs dependencies, runs <code>bash src/fetch_generate_publish.sh</code>, and injects the matching provider secret.</p></div>
+        <div class="timeline-item"><h3>Commit and publish</h3><p>New metadata, summaries, report pages, status, and index data are committed back to the branch. Netlify builds the static preview automatically.</p></div>
+      </div>
+    </section>
+
+    <section id="validation">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">07 · Evidence</div>
+          <h2>What has been validated.</h2>
+        </div>
+        <p>The implementation and the end-to-end report path were exercised on the current branch before review.</p>
+      </div>
+      <div class="checklist">
+        <div class="panel check"><span class="mark">✓</span><p><strong>36 tests passed.</strong><br>Provider behavior, PDF preprocessing, download retries, and summarization paths are covered.</p></div>
+        <div class="panel check"><span class="mark">✓</span><p><strong>Compile and diff checks passed.</strong><br>Python sources compile and the working tree passes whitespace validation.</p></div>
+        <div class="panel check"><span class="mark">✓</span><p><strong>Large-paper path exercised.</strong><br>The regenerated 2026-08-02 report processed 12 summaries from 14 candidates; two were intentionally filtered by relevance.</p></div>
+        <div class="panel check"><span class="mark">✓</span><p><strong>Preview deployed.</strong><br><a href="https://deploy-preview-38--ai-papers-reader.netlify.app">Open the Netlify deploy preview ↗</a></p></div>
+      </div>
+    </section>
+
+    <section id="map">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">08 · Code map</div>
+          <h2>Where to look first.</h2>
+        </div>
+        <p>These files form the shortest path through the implementation.</p>
+      </div>
+      <div class="grid-2">
+        <article class="panel card"><span class="tag">configuration</span><h3><a href="../config.yaml">config.yaml</a></h3><p>Provider/model choice, LLM timeout, PDF byte/page limits, references handling, and download retry settings.</p></article>
+        <article class="panel card"><span class="tag">provider boundary</span><h3><a href="../src/llm_client.py">src/llm_client.py</a></h3><p>Provider validation, compatible model resolution, credential loading, client creation, and normalized text generation.</p></article>
+        <article class="panel card"><span class="tag">PDF path</span><h3><a href="../src/pdf_preprocessor.py">src/pdf_preprocessor.py</a></h3><p>Resilient streaming download, References-aware extraction, and size/page trimming.</p></article>
+        <article class="panel card"><span class="tag">orchestration</span><h3><a href="../src/summarize_pdf.py">src/summarize_pdf.py</a> · <a href="../src/generate_report.py">src/generate_report.py</a></h3><p>Provider-specific handoff and the existing report-generation loop.</p></article>
+      </div>
+    </section>
+
+    <footer>
+      Generated for <a href="https://github.com/InMatrix/ai-papers-reader/pull/38">InMatrix/ai-papers-reader#38</a>. Walkthrough reflects the branch state after the provider override fix and schedule update. Source files are linked relative to this page.
+    </footer>
+  </main>
+</body>
+</html>
