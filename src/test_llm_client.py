@@ -30,7 +30,24 @@ def test_resolve_model_uses_deepseek_default():
 
 
 def test_resolve_model_uses_tracked_config():
-    assert resolve_model("deepseek", config={"model": "deepseek-v4-pro"}) == "deepseek-v4-pro"
+    assert resolve_model(
+        "deepseek",
+        config={"provider": "deepseek", "model": "deepseek-v4-pro"},
+    ) == "deepseek-v4-pro"
+
+
+def test_resolve_model_uses_selected_provider_default_for_mismatched_config():
+    config = {"provider": "deepseek", "model": "deepseek-v4-flash"}
+
+    assert resolve_model("gemini", config=config) == "gemini-flash-latest"
+
+
+def test_resolve_model_explicit_override_wins_over_configured_provider():
+    config = {"provider": "deepseek", "model": "deepseek-v4-flash"}
+
+    assert resolve_model(
+        "gemini", model="gemini-2.5-flash", config=config
+    ) == "gemini-2.5-flash"
 
 
 def test_generate_text_uses_deepseek_chat_completions():

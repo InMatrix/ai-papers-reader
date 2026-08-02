@@ -46,8 +46,17 @@ def resolve_provider(provider=None, config=None):
 
 def resolve_model(provider, model=None, config=None):
     config = config if config is not None else load_config()
-    provider = provider or resolve_provider(config=config)
-    return model or config.get("model") or DEFAULT_MODELS[provider]
+    provider = resolve_provider(provider, config=config)
+    if model:
+        return model
+
+    configured_model = config.get("model")
+    configured_provider = str(config.get("provider", "")).lower()
+    if configured_model and (
+        not configured_provider or configured_provider == provider
+    ):
+        return configured_model
+    return DEFAULT_MODELS[provider]
 
 
 def create_client(provider=None):
