@@ -7,3 +7,4 @@ docs/.sass-cache/
 .netlify
 node_modules/
 _site/
+.env
