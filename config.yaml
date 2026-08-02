@@ -9,6 +9,11 @@ pdf:
   max_pages: 12
   max_bytes: 15728640
   download_timeout_seconds: 120
+  download_connect_timeout_seconds: 20
+  download_read_timeout_seconds: 120
+  download_retries: 4
+  download_retry_backoff_seconds: 2
+  download_chunk_size_bytes: 1048576
   stop_at_references: true
   references_headings:
     - references

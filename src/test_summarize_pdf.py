@@ -3,11 +3,10 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 from summarize_pdf import (
     clean_markdown_blocks,
-    extract_pdf_text,
-    find_references_page,
     summarize_pdf,
     upload_file_with_retry,
 )
+from pdf_preprocessor import extract_pdf_text, find_references_page
 
 def test_clean_markdown_blocks_with_markers():
     """Test removal of markdown code block markers."""
@@ -116,30 +115,30 @@ def test_summarize_pdf_with_deepseek_extracts_text():
 
 
 def test_extract_pdf_text_limits_pages(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [Mock(extract_text=lambda i=i: f"Page {i}") for i in range(3)]
     reader = Mock(pages=pages)
-    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
 
-    assert summarize_pdf.extract_pdf_text(b"pdf", max_pages=2) == "Page 0\n\nPage 1"
+    assert extract_pdf_text(b"pdf", max_pages=2) == "Page 0\n\nPage 1"
 
 
 def test_find_references_page_detects_numbered_heading(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [
         Mock(extract_text=lambda: "5 Methods\nDetails"),
         Mock(extract_text=lambda: "6. References\n[1] A paper"),
     ]
     reader = Mock(pages=pages)
-    monkeypatch.setattr(summarize_pdf, "load_config", lambda: {"pdf": {}})
+    monkeypatch.setattr(pdf_preprocessor, "load_config", lambda: {"pdf": {}})
 
     assert find_references_page(reader) == 1
 
 
 def test_extract_pdf_text_stops_before_references(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [
         Mock(extract_text=lambda: "Introduction\nBody"),
@@ -147,9 +146,9 @@ def test_extract_pdf_text_stops_before_references(monkeypatch):
         Mock(extract_text=lambda: "[2] Another paper"),
     ]
     reader = Mock(pages=pages)
-    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
     monkeypatch.setattr(
-        summarize_pdf,
+        pdf_preprocessor,
         "load_config",
         lambda: {"pdf": {"max_bytes": 3, "stop_at_references": True}},
     )
@@ -158,16 +157,16 @@ def test_extract_pdf_text_stops_before_references(monkeypatch):
 
 
 def test_extract_pdf_text_keeps_references_for_small_documents(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [
         Mock(extract_text=lambda: "Introduction\nBody"),
         Mock(extract_text=lambda: "Conclusion\nReferences\n[1] A paper"),
     ]
     reader = Mock(pages=pages)
-    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
     monkeypatch.setattr(
-        summarize_pdf,
+        pdf_preprocessor,
         "load_config",
         lambda: {"pdf": {"max_bytes": 100, "stop_at_references": True}},
     )
@@ -178,13 +177,13 @@ def test_extract_pdf_text_keeps_references_for_small_documents(monkeypatch):
 
 
 def test_extract_pdf_text_caps_only_oversized_documents(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [Mock(extract_text=lambda i=i: f"Page {i}") for i in range(3)]
     reader = Mock(pages=pages)
-    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
     monkeypatch.setattr(
-        summarize_pdf,
+        pdf_preprocessor,
         "load_config",
         lambda: {"pdf": {"max_pages": 2, "max_bytes": 3, "stop_at_references": False}},
     )
@@ -193,7 +192,7 @@ def test_extract_pdf_text_caps_only_oversized_documents(monkeypatch):
 
 
 def test_truncate_pdf_prefers_body_before_references(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [
         Mock(extract_text=lambda: "Introduction"),
@@ -215,20 +214,20 @@ def test_truncate_pdf_prefers_body_before_references(monkeypatch):
         def write(self, stream):
             stream.write(b"x" * len(self.pages))
 
-    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
-    monkeypatch.setattr(summarize_pdf, "PdfWriter", FakeWriter)
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfWriter", FakeWriter)
     monkeypatch.setattr(
-        summarize_pdf,
+        pdf_preprocessor,
         "load_config",
         lambda: {"pdf": {"max_bytes": 1, "max_pages": 12}},
     )
 
-    assert summarize_pdf.truncate_pdf(b"large", max_bytes=1) == b"x"
+    assert pdf_preprocessor.truncate_pdf(b"large", max_bytes=1) == b"x"
     assert [len(writer.pages) for writer in FakeWriter.instances] == [1]
 
 
 def test_truncate_pdf_drops_trailing_pages_until_under_limit(monkeypatch):
-    import summarize_pdf
+    import pdf_preprocessor
 
     pages = [Mock(), Mock()]
     reader = Mock(pages=pages)
@@ -247,29 +246,29 @@ def test_truncate_pdf_drops_trailing_pages_until_under_limit(monkeypatch):
             # Two pages are too large; one page fits.
             stream.write(b"x" * (2 * len(self.pages)))
 
-    monkeypatch.setattr(summarize_pdf, "PdfReader", Mock(return_value=reader))
-    monkeypatch.setattr(summarize_pdf, "PdfWriter", FakeWriter)
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfWriter", FakeWriter)
     monkeypatch.setattr(
-        summarize_pdf,
+        pdf_preprocessor,
         "load_config",
         lambda: {"pdf": {"max_bytes": 3, "max_pages": 2}},
     )
 
-    assert summarize_pdf.truncate_pdf(b"large", max_bytes=3, max_pages=2) == b"xx"
+    assert pdf_preprocessor.truncate_pdf(b"large", max_bytes=3, max_pages=2) == b"xx"
     assert [len(writer.pages) for writer in FakeWriter.instances] == [2, 1]
 
 
 def test_truncate_pdf_keeps_small_documents(monkeypatch):
     import importlib
 
-    summarize_pdf_module = importlib.import_module("summarize_pdf")
-    assert summarize_pdf_module.truncate_pdf(b"small", max_bytes=10) == b"small"
+    pdf_preprocessor = importlib.import_module("pdf_preprocessor")
+    assert pdf_preprocessor.truncate_pdf(b"small", max_bytes=10) == b"small"
 
 
 def test_truncate_pdf_limits_large_documents(monkeypatch):
     import importlib
 
-    summarize_pdf_module = importlib.import_module("summarize_pdf")
+    pdf_preprocessor = importlib.import_module("pdf_preprocessor")
 
     pages = [Mock() for _ in range(3)]
     reader = Mock(pages=pages)
@@ -277,11 +276,11 @@ def test_truncate_pdf_limits_large_documents(monkeypatch):
     output = Mock()
     output.getvalue.return_value = b"first pages"
     writer.write.side_effect = lambda stream: None
-    monkeypatch.setattr(summarize_pdf_module, "PdfReader", Mock(return_value=reader))
-    monkeypatch.setattr(summarize_pdf_module, "PdfWriter", Mock(return_value=writer))
-    monkeypatch.setattr(summarize_pdf_module, "BytesIO", Mock(return_value=output))
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfWriter", Mock(return_value=writer))
+    monkeypatch.setattr(pdf_preprocessor, "BytesIO", Mock(return_value=output))
 
-    assert summarize_pdf_module.truncate_pdf(
+    assert pdf_preprocessor.truncate_pdf(
         b"large", max_pages=2, max_bytes=1
     ) == b"first pages"
     assert writer.add_page.call_count == 3
