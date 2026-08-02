@@ -1,6 +1,7 @@
 import pytest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
-from summarize_pdf import clean_markdown_blocks, upload_file_with_retry
+from summarize_pdf import clean_markdown_blocks, summarize_pdf, upload_file_with_retry
 
 def test_clean_markdown_blocks_with_markers():
     """Test removal of markdown code block markers."""
@@ -81,4 +82,28 @@ def test_upload_file_with_retry_non_retryable_error():
     
     with patch('summarize_pdf.get_client', return_value=mock_client):
         with pytest.raises(Exception):
-            result = upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)
+            upload_file_with_retry('/tmp/test.pdf', 'test.pdf', max_retries=3)
+
+
+def test_summarize_pdf_with_deepseek_extracts_text():
+    mock_client = Mock()
+    mock_client.chat.completions.create.return_value = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="# Summary\nPaper summary")
+            )
+        ]
+    )
+
+    with patch("summarize_pdf.extract_pdf_text", return_value="Extracted paper text"):
+        result = summarize_pdf(
+            b"pdf content",
+            client=mock_client,
+            provider="deepseek",
+            model="deepseek-v4-flash",
+        )
+
+    assert result == "# Summary\nPaper summary"
+    request = mock_client.chat.completions.create.call_args.kwargs
+    assert request["model"] == "deepseek-v4-flash"
+    assert "<paper>\nExtracted paper text\n</paper>" in request["messages"][0]["content"]

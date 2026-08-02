@@ -23,7 +23,10 @@ jobs:
 
     - name: Run the pipeline
       env:
+        LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+        LLM_MODEL: ${{ vars.LLM_MODEL }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       run: |
         bash src/fetch_generate_publish.sh
 
