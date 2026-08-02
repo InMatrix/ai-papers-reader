@@ -2,7 +2,9 @@ name: Fetch paper metadata, generate report, and update reports index
 
 on:
   schedule:
-    - cron: '0 0 * * 5' # This runs the workflow weekly on Friday at midnight
+    # GitHub Actions cron uses UTC. 12:00 UTC is 20:00 Beijing time (UTC+8),
+    # safely outside DeepSeek's 09:00-12:00 and 14:00-18:00 peak windows.
+    - cron: '0 12 * * 5' # Weekly Friday run at 20:00 Beijing time
   workflow_dispatch: # Allows manual trigger
 
 jobs:
