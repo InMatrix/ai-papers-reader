@@ -1,69 +1,47 @@
 """
-PDF Summarizer using Google's Gemini Flash Model
+PDF summarizer using Gemini or DeepSeek models.
 
-This script downloads a PDF from a given URL and generates a summary using
-Google's Gemini Flash model. It utilizes the google-genai library
-to interact with the Gemini model and directly uploads the PDF for processing.
+This script generates a summary from PDF bytes. PDF downloading and local
+preprocessing live in pdf_preprocessor.py. Gemini receives the processed PDF
+directly; DeepSeek receives text extracted locally from the PDF.
 
-Features:
-- Downloads a PDF from a specified URL
-- Uploads the PDF directly to the Gemini model using client.files.upload
-- Generates a 500-word summary of the PDF content
-- Accepts the PDF URL as a command-line argument
-
-Requirements:
-- Python 3.7+
-- google-genai library
-- requests library
-- frontmatter library
-
-Usage:
-1. Install required libraries:
-   pip install google-genai requests frontmatter
-
-2. Set your Google API key in the script or as an environment variable:
-   export GOOGLE_API_KEY='your_google_api_key_here'
-
-3. Run the script with a PDF URL as an argument:
-   python summarize_pdf.py https://arxiv.org/pdf/2407.16741
-
-Note: Ensure you have the necessary permissions and comply with the terms of service
-for both the PDF source and the Google Generative AI API.
+Provider/model selection is read from the tracked config.yaml file. Credentials
+are loaded from the local .env file or the process environment.
 """
 
-import os
 import argparse
-import requests
+import os
 import tempfile
-from google import genai
 import frontmatter
 import re
 import time
+from llm_client import (
+    create_client,
+    generate_text,
+    resolve_model,
+    resolve_provider,
+)
+from pdf_preprocessor import (
+    download_pdf,
+    extract_pdf_text,
+    find_references_page,
+    truncate_pdf,
+)
 
 # Initialize client lazily
 _client = None
+_client_provider = None
 
-def get_client():
+def get_client(provider=None):
     """
     Get or create the generative AI client.
     """
-    global _client
-    if _client is None:
-        _client = genai.Client(api_key=os.environ['GOOGLE_API_KEY'])
+    global _client, _client_provider
+    provider = resolve_provider(provider)
+    if _client is None or _client_provider != provider:
+        _client = create_client(provider)
+        _client_provider = provider
     return _client
-
-def download_pdf(url):
-    """
-    Download a PDF file from the given URL.
-
-    Args:
-    url (str): The URL of the PDF file to download.
-
-    Returns:
-    bytes: The content of the PDF file.
-    """
-    response = requests.get(url)
-    return response.content
 
 def get_summary_path(pdf_url, save_location):
     """
@@ -100,7 +78,7 @@ def clean_markdown_blocks(text):
     text = re.sub(r'\n```\s*$', '', text)
     return text
 
-def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay=1):
+def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay=1, client=None):
     """
     Upload a file to Gemini with retry logic for handling transient errors.
     
@@ -118,7 +96,7 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     """
     from google.genai import types
     
-    client = get_client()
+    client = client or get_client("gemini")
     delay = initial_delay
     last_exception = None
     
@@ -153,9 +131,9 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     # If we exhausted all retries, raise the last exception
     raise last_exception
 
-def summarize_pdf(pdf_content):
+def summarize_pdf(pdf_content, client=None, provider=None, model=None):
     """
-    Summarize the content of a PDF using the Gemini Flash model.
+    Summarize the content of a PDF using the selected provider and model.
 
     Args:
     pdf_content (bytes): The content of the PDF file.
@@ -163,30 +141,45 @@ def summarize_pdf(pdf_content):
     Returns:
     str: A 500-word summary of the PDF content.
     """
-    client = get_client()
+    provider = resolve_provider(provider)
+    model = resolve_model(provider, model)
+    client = client or get_client(provider)
+
+    with open('prompts/summarize_paper.txt', 'r') as file:
+        prompt = file.read().strip()
+
+    if provider == "deepseek":
+        paper_text = extract_pdf_text(pdf_content)
+        response_text = generate_text(
+            client,
+            f"{prompt}\n\n<paper>\n{paper_text}\n</paper>",
+            provider=provider,
+            model=model,
+        )
+        return clean_markdown_blocks(response_text)
     
+    # Gemini can process PDFs directly. Keep the complete document below the
+    # size cap, and use a first-pages PDF for unusually large documents.
+    gemini_pdf_content = truncate_pdf(pdf_content)
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
-        temp_pdf.write(pdf_content)
+        temp_pdf.write(gemini_pdf_content)
         temp_pdf.flush()
         
         # Upload the PDF file with retry logic
-        uploaded_file = upload_file_with_retry(temp_pdf.name, "paper.pdf")
+        uploaded_file = upload_file_with_retry(
+            temp_pdf.name, "paper.pdf", client=client
+        )
         
-    # Generate content using the uploaded file
-    with open('prompts/summarize_paper.txt', 'r') as file:
-        prompt = file.read().strip()
-    
     try:
         response = client.models.generate_content(
-            model='gemini-flash-latest',
+            model=model,
             contents=[prompt, uploaded_file]
         )
     except Exception as e:
         print(f"Error generating content: {e}")
         return None
-    
-    # Clean up the temporary file
-    os.unlink(temp_pdf.name)
+    finally:
+        os.unlink(temp_pdf.name)
     
     # Clean the response text of markdown code block markers
     return clean_markdown_blocks(response.text)
@@ -245,7 +238,7 @@ def save_summary(summary, output_file):
     with open(output_file, 'w') as f:
         f.write(summary)
 
-def pdf_to_summary(pdf_url, summary_path):
+def pdf_to_summary(pdf_url, summary_path, client=None, provider=None, model=None):
     """
     Get the content of the summary for a given PDF URL without saving it to a file.
     Args:
@@ -264,7 +257,9 @@ def pdf_to_summary(pdf_url, summary_path):
     pdf_content = download_pdf(pdf_url)
     
     print(">>> Generating summary...")
-    summary = summarize_pdf(pdf_content)
+    summary = summarize_pdf(
+        pdf_content, client=client, provider=provider, model=model
+    )
 
     if summary is None:
         print(f"Failed to generate summary for {pdf_url}")
@@ -276,7 +271,7 @@ def pdf_to_summary(pdf_url, summary_path):
 
     return summary_with_front_matter
 
-def main(pdf_url, save_location):
+def main(pdf_url, save_location, client=None, provider=None, model=None):
     """
     Main function to orchestrate the PDF download and summarization process.
 
@@ -286,7 +281,16 @@ def main(pdf_url, save_location):
     """
     summary_path = get_summary_path(pdf_url, save_location)
 
-    summary_content = pdf_to_summary(pdf_url, summary_path)
+    provider = resolve_provider(provider)
+    model = resolve_model(provider, model)
+    client = client or create_client(provider)
+    summary_content = pdf_to_summary(
+        pdf_url,
+        summary_path,
+        client=client,
+        provider=provider,
+        model=model,
+    )
 
     if summary_content is None:
         print(f"Failed to generate summary for {pdf_url}")
@@ -297,9 +301,15 @@ def main(pdf_url, save_location):
     return summary_path
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Summarize a PDF from a given URL using Gemini 2.5 Flash.")
+    parser = argparse.ArgumentParser(
+        description="Summarize a PDF using Gemini or DeepSeek."
+    )
     parser.add_argument("url", help="The URL of the PDF to summarize")
     parser.add_argument("--save_location", default="docs/summaries", help="Directory to save the summary file. Default is 'docs/summaries'.")
+    parser.add_argument("--provider", choices=["gemini", "deepseek"], help="LLM provider")
+    parser.add_argument("--model", help="Model ID")
     args = parser.parse_args()
 
-    main(args.url, args.save_location)
+    provider = resolve_provider(args.provider)
+    model = resolve_model(provider, args.model)
+    main(args.url, args.save_location, provider=provider, model=model)

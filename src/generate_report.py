@@ -3,8 +3,14 @@ import argparse
 import json
 import yaml
 import time
-from google import genai
 import summarize_pdf
+from llm_client import (
+    create_client,
+    generate_text,
+    load_config,
+    resolve_model,
+    resolve_provider,
+)
 from json_to_markdown import json_to_markdown
 
 
@@ -75,7 +81,8 @@ def update_status(paper_data_path, updates):
 def parse_model_response(response):
     try:
         # Remove leading and trailing whitespace
-        cleaned_response = response.text.strip()
+        response_text = response.text if hasattr(response, "text") else response
+        cleaned_response = response_text.strip()
 
         # Remove markdown code fences if present
         # Handle ```json\n...\n``` format
@@ -128,7 +135,14 @@ def parse_model_response(response):
     return response_json
 
 
-def is_relevant(summary, topic_description, client, threshold=0.5):
+def is_relevant(
+    summary,
+    topic_description,
+    client,
+    provider="gemini",
+    model=None,
+    threshold=0.5,
+):
     """
     Check if the summary is relevant to the topic description using the AI model.
     """
@@ -140,15 +154,15 @@ Topic Description: {topic_description}
 
 Answer with ONLY a single number between 0 and 1 representing the relevance score. 
 Do not include any other text, explanation, or JSON formatting. 
-Just output the number, for example: 0.9"""
+    Just output the number, for example: 0.9"""
     
-    response = client.models.generate_content(
-        model='gemini-flash-latest',
-        contents=prompt
-    )
+    provider = resolve_provider(provider)
+    model = resolve_model(provider, model)
+    response_text = generate_text(client, prompt, provider=provider, model=model)
     # The Gemini free tier has a rate limit of 15 RPM
-    time.sleep(5)
-    relevance_score = float(response.text.strip())
+    if provider == "gemini":
+        time.sleep(5)
+    relevance_score = float(response_text.strip())
     return relevance_score
 
 
@@ -187,17 +201,29 @@ def inflate_prompt(
     return prompt, topics
 
 
-def generate_report(client, prompt, topics, paper_data_path, date_string, report_path, skip_summary=False):
+def generate_report(
+    client,
+    prompt,
+    topics,
+    paper_data_path,
+    date_string,
+    report_path,
+    skip_summary=False,
+    provider="gemini",
+    model=None,
+):
     # generate paper recommendations in json format
-    response = client.models.generate_content(
-        model='gemini-flash-latest',
-        contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "temperature": 0.7,
-        }
+    provider = resolve_provider(provider)
+    model = resolve_model(provider, model)
+    response_text = generate_text(
+        client,
+        prompt,
+        provider=provider,
+        model=model,
+        json_output=True,
+        temperature=0.7,
     )
-    response_json = parse_model_response(response)
+    response_json = parse_model_response(response_text)
 
     # helper to generate and save markdown
     def save_markdown(data):
@@ -230,7 +256,11 @@ def generate_report(client, prompt, topics, paper_data_path, date_string, report
                         paper["url"], summary_save_location
                     )
                     summary_content = summarize_pdf.pdf_to_summary(
-                        paper["url"], summary_path
+                        paper["url"],
+                        summary_path,
+                        client=client,
+                        provider=provider,
+                        model=model,
                     )
 
                     if summary_path and summary_content:
@@ -241,7 +271,13 @@ def generate_report(client, prompt, topics, paper_data_path, date_string, report
                             f"Saved a summary of the paper {paper['title']} to {summary_path}"
                         )
 
-                        relevance_score = is_relevant(summary_content, topic_description, client)
+                        relevance_score = is_relevant(
+                            summary_content,
+                            topic_description,
+                            client,
+                            provider=provider,
+                            model=model,
+                        )
 
                         if relevance_score >= 0.5:
                             # Relevant: update paper details
@@ -302,6 +338,15 @@ def setup_argparse():
     parser.add_argument(
         "--skip_summary", action="store_true", help="Skip the summarization step"
     )
+    parser.add_argument(
+        "--provider",
+        choices=["gemini", "deepseek"],
+        help="One-off provider override (default: config.yaml)",
+    )
+    parser.add_argument(
+        "--model",
+        help="One-off model override (default: config.yaml)",
+    )
     return parser
 
 
@@ -323,18 +368,27 @@ def main():
 
     prompt_template_path = "prompts/recommend_papers.txt"
 
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-    if not GOOGLE_API_KEY:
-        raise ValueError("GOOGLE_API_KEY environment variable is not set")
-
-    client = genai.Client(api_key=GOOGLE_API_KEY)
+    config = load_config()
+    provider = resolve_provider(args.provider, config=config)
+    model = resolve_model(provider, args.model, config=config)
+    client = create_client(provider)
 
     prompt, topics = inflate_prompt(prompt_template_path, args.paper_data_path)
 
     # Initialize status entry
     update_status(args.paper_data_path, {})
 
-    generate_report(client, prompt, topics, args.paper_data_path, date_string, args.report_path, skip_summary=args.skip_summary)
+    generate_report(
+        client,
+        prompt,
+        topics,
+        args.paper_data_path,
+        date_string,
+        args.report_path,
+        skip_summary=args.skip_summary,
+        provider=provider,
+        model=model,
+    )
 
     print(f"Report generated and saved to {args.report_path}")
 

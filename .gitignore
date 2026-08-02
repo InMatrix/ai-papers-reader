@@ -8,3 +8,6 @@ docs/.sass-cache/
 node_modules/
 _site/
 .env
+
+# Temporary local walkthroughs and other scratch artifacts
+tmp/

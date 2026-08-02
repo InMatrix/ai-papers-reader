@@ -1,5 +1,8 @@
 # dependencies used in the project
 requests
 google-genai
+openai
+pypdf
 pyyaml
 python-frontmatter
+python-dotenv
