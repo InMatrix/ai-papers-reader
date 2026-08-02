@@ -16,11 +16,25 @@ AI Papers Reader is built with the following building blocks:
 
 The default set of topics AI Papers Reader currently uses to identify relevant papers is based on my research interests. You can customize it by forking the repo and editing [the prompt template](https://github.com/InMatrix/ai-papers-reader/blob/main/prompts/recommend_papers.txt).
 
-Provider and model selection live in the committed [config.yaml](config.yaml):
+Provider and model selection live in the committed [config.yaml](config.yaml). The supported provider defaults are:
+
+| Provider | Default model | API key |
+| --- | --- | --- |
+| Gemini | `gemini-flash-latest` | `GOOGLE_API_KEY` |
+| DeepSeek | `deepseek-v4-flash` | `DEEPSEEK_API_KEY` |
+
+The current committed selection is DeepSeek:
 
 ```yaml
 provider: deepseek
 model: deepseek-v4-flash
+```
+
+To use Gemini instead, change those two values to:
+
+```yaml
+provider: gemini
+model: gemini-flash-latest
 ```
 
 Store credentials locally in an ignored `.env` file. Start from `.env.example`:
@@ -30,14 +44,14 @@ cp .env.example .env
 # Edit .env and set GOOGLE_API_KEY and/or DEEPSEEK_API_KEY.
 ```
 
-Gemini remains the default provider. To use DeepSeek, edit `config.yaml` as shown above:
+The CLI `--provider` and `--model` flags remain available as one-off overrides. If no model override is supplied, the configured model is used when it matches the selected provider; otherwise the provider default from the table above is used.
 
 ```bash
 pip install -r requirements.txt
 python src/generate_report.py
 ```
 
-CLI `--provider` and `--model` flags remain available as one-off overrides. DeepSeek PDF summarization extracts text locally, so scanned PDFs without a text layer are not supported.
+DeepSeek PDF summarization extracts text locally, so scanned PDFs without a text layer are not supported.
 
 PDF handling is bounded for reliability: both providers receive the complete file when it is under the configured 15 MiB default. For oversized PDFs, text extraction/PDF upload first tries the complete body before a configurable References/Bibliography heading, then drops trailing pages one at a time from the configured page limit until the generated PDF fits. Downloads stream in chunks and retry transient network/HTTP failures with exponential backoff; tune the PDF timeout/retry settings in `config.yaml` as needed. Set `pdf.stop_at_references` to `false` or customize `pdf.references_headings` when needed.
 
