@@ -6,40 +6,61 @@
     - Documentation generation: LLMs can help create or improve code documentation by generating summaries, explaining complex functions, or writing API documentation.
     - Code refactoring: AI can suggest ways to improve code structure, readability, and efficiency.
 
-- topic: AI Agents
+- topic: Harness Engineering
   description: |
-    AI Agent research is the field studying autonomous software systems that can perceive their environment, reason about tasks, plan actions, and execute them using available tools and resources. These agents typically combine large language models (serving as their "brain") with capabilities like memory, tool use, and planning to accomplish user-defined goals. The field focuses on creating agents that can:
-    - Break complex tasks into manageable steps
-    - Use reasoning to make decisions and solve problems
-    - Learn from experience and adapt strategies
-    - Interact with digital tools and environments
-    - Work independently or collaborate with other agents
-    - Maintain safety and alignment with human values
+    Harness engineering is the practice of designing, composing, and iterating the
+    operational scaffold around a foundation model—prompts, tools, memory, permissions,
+    orchestration, and evaluation loops—so the resulting agent system behaves reliably
+    in a target environment. Prefer work on human-in-the-loop harness engineering and
+    observability of agent behavior: how people inspect, steer, debug, and improve the
+    harness, and how agent trajectories and decisions are made visible and actionable.
+    Relevant work includes:
+    - Editable harness artifacts (prompts, tools, skills, memory, workflows, policies)
+      that operators or teams change with humans meaningfully in the loop
+    - Observability: tracing, failure attribution, monitoring consoles, trajectory
+      inspection, and interfaces that reveal why an agent acted as it did
+    - Platforms and UIs for composing, inspecting, versioning, or sharing harnesses
+    - Methods to evaluate, debug, or repair harness quality from observed behavior
+    - Team/ops practices for governing who may change harness components and how
+    Prefer papers whose contribution is the harness itself, how people engineer it
+    interactively, or how agent behavior is made observable. Deprioritize pure model
+    training, novel agent architectures without human oversight/observability, and
+    builder-only APIs that do not address configuring, inspecting, or improving the
+    harness around a model.
 
-- topic: LLM Evaluation Methods
+- topic: Human-in-the-Loop Evaluation
   description: |
-    Evaluating Large Language Models (LLMs) is critical for understanding their capabilities, limitations, and alignment with user needs. Key evaluation methods include:
-    - Benchmarking: Using standardized datasets to assess performance across tasks like text generation, summarization, and question answering.
-    - Human-in-the-loop evaluation: Involving human evaluators to rate outputs for relevance, coherence, and usability.
-    - Robustness testing: Assessing model performance under adversarial inputs or edge cases.
-    - Ethical and bias evaluation: Identifying and mitigating biases in model outputs to ensure fairness and inclusivity.
-    From an HCI perspective, evaluation methods should also consider user satisfaction, trust, and the cognitive load required to interact with the model.
+    Research on evaluation methods that involve humans in assessing AI systems,
+    rather than relying only on automatic metrics or LLM-as-judge. Relevant work includes:
+    - Expert or crowd annotation protocols for model outputs, agents, or interfaces
+    - Preference collection, pairwise comparison, and rating studies with people
+    - Hybrid pipelines where humans verify, audit, or calibrate automated judges
+    - Benchmarks or studies that measure agreement between human and machine evaluations
+    - Methods that keep people meaningfully involved in high-stakes or open-ended eval
+    Prefer papers whose core contribution is evaluation methodology involving humans,
+    not merely papers that report a small human study as an afterthought.
 
-- topic: Reinforcement Learning
+- topic: Human-AI Collaboration
   description: |
-    Reinforcement Learning (RL) is a machine learning paradigm where agents learn optimal behaviors by interacting with environments and receiving rewards or penalties. Key aspects include:
-    - Policy optimization: Techniques like Q-learning and actor-critic methods for improving decision-making strategies.
-    - Exploration vs. exploitation: Balancing the need to explore new actions with leveraging known rewards.
-    - Multi-agent RL: Studying interactions and cooperation between multiple agents in shared environments.
-    - Novel agent environment design: Creating innovative and adaptive environments that challenge agents and facilitate learning of complex behaviors.
-    From an HCI perspective, RL research explores how humans can effectively guide agent learning, interpret agent behaviors, and design environments that facilitate intuitive human-agent collaboration.
+    Research on how people and AI systems work together to accomplish tasks, including
+    shared control, complementary strengths, and interactive workflows. Relevant work includes:
+    - Co-creation, co-writing, co-coding, or joint decision-making with models or agents
+    - Mixed-initiative interfaces where initiative shifts between human and AI
+    - Studies of teamwork, role allocation, handoff, and oversight in human-AI teams
+    - Designs that preserve human agency while using AI assistance productively
+    - Empirical studies of collaborative performance, trust, and failure recovery
+    Prefer papers focused on collaborative interaction or teaming, not fully autonomous
+    agents evaluated in isolation from people.
 
-- topic: Explainable AI
+- topic: Simulated Users
   description: |
-    Explainable AI (XAI) aims to make AI decision-making processes more transparent and interpretable. Some techniques include:
-    - LIME (Local Interpretable Model-agnostic Explanations): Providing local explanations for individual predictions by perturbing input features.
-    - SHAP (SHapley Additive exPlanations): Calculating feature importance based on game theory concepts.
-    - Attention visualization: In models like transformers, visualizing attention weights to show which parts of the input the model focuses on.
-    - Counterfactual explanations: Showing how changes in input would affect the output, helping users understand decision boundaries.
-    - Rule extraction: Deriving human-readable rules from complex models to approximate their behavior.
-
+    Research that builds, validates, or uses simulated people (user simulators, persona
+    agents, synthetic annotators, or LLM-based stand-ins) to train, evaluate, or study
+    interactive AI systems. Relevant work includes:
+    - User simulators for dialogue, agents, recommenders, tutoring, or UX evaluation
+    - Persona or preference models that stand in for real users in multi-turn settings
+    - Methods comparing simulator fidelity against real human behavior or judgments
+    - Synthetic user feedback for RLHF, interactive eval, or interaction design
+    - Risks and limits of replacing humans with simulated users in evaluation
+    Prefer papers whose contribution centers on simulating users or human feedback,
+    not papers that only mention personas casually.
