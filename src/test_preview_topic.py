@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import date
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -9,6 +10,7 @@ from preview_topic import (
     aggregate_by_topic,
     format_text_report,
     list_paper_metadata_files,
+    parse_preview_response,
     preview_weeks,
     resolve_week_selection,
     setup_argparse,
@@ -126,6 +128,19 @@ def test_aggregate_and_format_report():
     assert "Paper B" in report
 
 
+def test_parse_preview_response_rejects_invalid_json_without_writing(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="not valid JSON"):
+        parse_preview_response("not json at all")
+    assert not Path("error_response.txt").exists()
+
+
+def test_parse_preview_response_strips_fences():
+    payload = [{"topic": "T", "papers": []}]
+    wrapped = f"```json\n{json.dumps(payload)}\n```"
+    assert parse_preview_response(wrapped) == payload
+
+
 def test_preview_weeks_no_summarize_or_status(tmp_path):
     week1 = _touch_metadata(tmp_path, "2026-07-03", "Paper data week 1")
     week2 = _touch_metadata(tmp_path, "2026-08-02", "Paper data week 2")
@@ -150,11 +165,8 @@ def test_preview_weeks_no_summarize_or_status(tmp_path):
     ]
 
     mock_client = Mock()
-    docs_before = set()
-    status_path = tmp_path / "status.json"
 
     with patch("preview_topic.generate_text") as mock_generate, \
-         patch("preview_topic.parse_model_response", return_value=mock_response), \
          patch("generate_report.summarize_pdf") as mock_summarize, \
          patch("generate_report.update_status") as mock_update_status, \
          patch("generate_report.generate_report") as mock_generate_report:
@@ -179,5 +191,3 @@ def test_preview_weeks_no_summarize_or_status(tmp_path):
         mock_summarize.assert_not_called()
         mock_update_status.assert_not_called()
         mock_generate_report.assert_not_called()
-        assert not status_path.exists()
-        assert docs_before == set()

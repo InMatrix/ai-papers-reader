@@ -16,15 +16,12 @@ import argparse
 import json
 import os
 import re
+import sys
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-from generate_report import (
-    extract_date_from_paper_data_path,
-    inflate_prompt,
-    parse_model_response,
-)
+from generate_report import extract_date_from_paper_data_path, inflate_prompt
 from llm_client import (
     create_client,
     generate_text,
@@ -37,6 +34,11 @@ PAPER_METADATA_RE = re.compile(r"^paper_metadata_(\d{4}-\d{2}-\d{2})\.txt$")
 DEFAULT_WEEKS = 4
 DEFAULT_TOPICS = "prompts/_topics.yaml"
 DEFAULT_PROMPT_TEMPLATE = "prompts/recommend_papers.txt"
+
+
+def _log(message):
+    """Progress and status messages go to stderr so stdout stays pipeable."""
+    print(message, file=sys.stderr)
 
 
 def _parse_date(value: str) -> date:
@@ -99,6 +101,43 @@ def _coerce_date(value):
     return _parse_date(str(value))
 
 
+def parse_preview_response(response):
+    """
+    Parse the model JSON response without writing debug files.
+
+    Unlike generate_report.parse_model_response, this keeps the dry-run
+    guarantee (no error_response.txt or other side-effect writes).
+    """
+    response_text = response.text if hasattr(response, "text") else response
+    cleaned_response = response_text.strip()
+
+    if cleaned_response.startswith("```json"):
+        cleaned_response = cleaned_response[7:]
+    elif cleaned_response.startswith("```"):
+        cleaned_response = cleaned_response[3:]
+
+    if cleaned_response.endswith("```"):
+        cleaned_response = cleaned_response[:-3]
+
+    start_idx = -1
+    for i, char in enumerate(cleaned_response):
+        if char in ["{", "["]:
+            start_idx = i
+            break
+
+    if start_idx > 0:
+        cleaned_response = cleaned_response[start_idx:]
+
+    cleaned_response = cleaned_response.strip()
+
+    try:
+        return json.loads(cleaned_response)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Model response is not valid JSON for week preview: {exc}"
+        ) from exc
+
+
 def preview_weeks(
     client,
     paper_data_paths,
@@ -125,7 +164,7 @@ def preview_weeks(
 
     for paper_data_path in paper_data_paths:
         week = extract_date_from_paper_data_path(paper_data_path)
-        print(f"Matching week {week} ({paper_data_path})...")
+        _log(f"Matching week {week} ({paper_data_path})...")
         prompt, _topics = inflate_prompt(
             prompt_template_path, paper_data_path, topics_path=topics_path
         )
@@ -137,7 +176,7 @@ def preview_weeks(
             json_output=True,
             temperature=0.7,
         )
-        response_json = parse_model_response(response_text)
+        response_json = parse_preview_response(response_text)
         results.append(
             {
                 "week": week,
@@ -245,7 +284,7 @@ def setup_argparse():
     )
     parser.add_argument(
         "--output",
-        help="Write report to this path instead of (or in addition to) stdout",
+        help="Write report to this path instead of stdout",
     )
     parser.add_argument(
         "--provider",
@@ -287,7 +326,7 @@ def main(argv=None):
             "No paper_metadata_*.txt files matched the selected week filters."
         )
 
-    print(
+    _log(
         f"Previewing {len(paper_paths)} week(s) with topics from {args.topics} "
         "(first-stage match only; summarization skipped)."
     )
@@ -322,11 +361,10 @@ def main(argv=None):
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(report)
-        print(f"Wrote preview to {args.output}")
-
-    # Always print unless writing JSON-only to a file without wanting stdout —
-    # print report to stdout for interactive use.
-    print(report, end="")
+        _log(f"Wrote preview to {args.output}")
+    else:
+        # stdout is reserved for the report so --json stays machine-readable
+        print(report, end="")
 
 
 if __name__ == "__main__":
