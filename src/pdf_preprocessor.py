@@ -334,7 +334,7 @@ def truncate_pdf(pdf_content, max_pages=None, max_bytes=None):
     )
     if len(truncated_content) <= max_bytes:
         print(
-            f"PDF is {len(pdf_content)} bytes; limiting Gemini input to the first "
+            f"PDF is {len(pdf_content)} bytes; limiting PDF input to the first "
             f"{kept_pages} pages ({len(truncated_content)} bytes)"
         )
     else:

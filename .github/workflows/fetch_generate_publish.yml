@@ -10,6 +10,9 @@ on:
 jobs:
   fetch-generate-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Commit and push the generated reports
+      id-token: write # Request GitHub OIDC tokens for Claude Workload Identity Federation
 
     steps:
     - name: Checkout repository
@@ -27,6 +30,13 @@ jobs:
       env:
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        # Claude authenticates through Workload Identity Federation instead of
+        # an API key. These IDs are not secrets; src/llm_client.py exchanges a
+        # fresh GitHub OIDC token whenever the SDK needs an access token.
+        ANTHROPIC_FEDERATION_RULE_ID: fdrl_011thMZ1CGGLDjvP6NcPiX9r
+        ANTHROPIC_ORGANIZATION_ID: 1f5898ef-ac07-48e7-8120-e308d43a5754
+        ANTHROPIC_SERVICE_ACCOUNT_ID: svac_018ZDoRGuv3WDuoxjEQsxrxX
+        ANTHROPIC_WORKSPACE_ID: wrkspc_01DDZaHJQvZN2j41yiF2zKRk
       run: |
         bash src/fetch_generate_publish.sh
 

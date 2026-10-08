@@ -1,6 +1,7 @@
+import base64
 import pytest
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from summarize_pdf import (
     clean_markdown_blocks,
     summarize_pdf,
@@ -112,6 +113,42 @@ def test_summarize_pdf_with_deepseek_extracts_text():
     request = mock_client.chat.completions.create.call_args.kwargs
     assert request["model"] == "deepseek-v4-flash"
     assert "<paper>\nExtracted paper text\n</paper>" in request["messages"][0]["content"]
+
+
+def test_summarize_pdf_with_claude_sends_size_capped_pdf_document():
+    mock_client = MagicMock()
+    stream = mock_client.beta.messages.stream.return_value.__enter__.return_value
+    stream.get_final_message.return_value = SimpleNamespace(
+        content=[SimpleNamespace(type="text", text="```markdown\n# Summary\nBody\n```")],
+        stop_reason="end_turn",
+        stop_details=None,
+        usage=SimpleNamespace(iterations=None),
+        model="claude-opus-5-5",
+    )
+
+    with patch("summarize_pdf.truncate_pdf", return_value=b"%PDF-capped") as truncate:
+        result = summarize_pdf(
+            b"%PDF-original",
+            client=mock_client,
+            provider="claude",
+            model="claude-opus-5-5",
+        )
+
+    assert result == "# Summary\nBody"
+    truncate.assert_called_once_with(b"%PDF-original")
+    document, instructions = mock_client.beta.messages.stream.call_args.kwargs[
+        "messages"
+    ][0]["content"]
+    assert document == {
+        "type": "document",
+        "source": {
+            "type": "base64",
+            "media_type": "application/pdf",
+            "data": base64.standard_b64encode(b"%PDF-capped").decode("ascii"),
+        },
+    }
+    assert instructions["type"] == "text"
+    assert "attached research paper" in instructions["text"]
 
 
 def test_extract_pdf_text_limits_pages(monkeypatch):
