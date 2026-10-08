@@ -1,6 +1,7 @@
+import base64
 import pytest
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from summarize_pdf import (
     clean_markdown_blocks,
     summarize_pdf,
@@ -114,6 +115,42 @@ def test_summarize_pdf_with_deepseek_extracts_text():
     assert "<paper>\nExtracted paper text\n</paper>" in request["messages"][0]["content"]
 
 
+def test_summarize_pdf_with_claude_sends_main_text_pdf_document():
+    mock_client = MagicMock()
+    stream = mock_client.beta.messages.stream.return_value.__enter__.return_value
+    stream.get_final_message.return_value = SimpleNamespace(
+        content=[SimpleNamespace(type="text", text="```markdown\n# Summary\nBody\n```")],
+        stop_reason="end_turn",
+        stop_details=None,
+        usage=SimpleNamespace(iterations=None),
+        model="claude-opus-5-5",
+    )
+
+    with patch("summarize_pdf.truncate_pdf", return_value=b"%PDF-main-text") as truncate:
+        result = summarize_pdf(
+            b"%PDF-original",
+            client=mock_client,
+            provider="claude",
+            model="claude-haiku-5-5",
+        )
+
+    assert result == "# Summary\nBody"
+    truncate.assert_called_once_with(b"%PDF-original", main_text_only=True)
+    document, instructions = mock_client.beta.messages.stream.call_args.kwargs[
+        "messages"
+    ][0]["content"]
+    assert document == {
+        "type": "document",
+        "source": {
+            "type": "base64",
+            "media_type": "application/pdf",
+            "data": base64.standard_b64encode(b"%PDF-main-text").decode("ascii"),
+        },
+    }
+    assert instructions["type"] == "text"
+    assert "attached research paper" in instructions["text"]
+
+
 def test_extract_pdf_text_limits_pages(monkeypatch):
     import pdf_preprocessor
 
@@ -224,6 +261,56 @@ def test_truncate_pdf_prefers_body_before_references(monkeypatch):
 
     assert pdf_preprocessor.truncate_pdf(b"large", max_bytes=1) == b"x"
     assert [len(writer.pages) for writer in FakeWriter.instances] == [1]
+
+
+def test_truncate_pdf_main_text_only_keeps_pages_through_references(monkeypatch):
+    import pdf_preprocessor
+
+    pages = [
+        Mock(extract_text=lambda: "Introduction"),
+        Mock(extract_text=lambda: "Conclusion\nReferences\n[1] A paper"),
+        Mock(extract_text=lambda: "[2] Another paper"),
+        Mock(extract_text=lambda: "Appendix A"),
+    ]
+    reader = Mock(pages=pages)
+
+    class FakeWriter:
+        instances = []
+
+        def __init__(self):
+            self.pages = []
+            FakeWriter.instances.append(self)
+
+        def add_page(self, page):
+            self.pages.append(page)
+
+        def write(self, stream):
+            stream.write(b"x" * len(self.pages))
+
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(pdf_preprocessor, "PdfWriter", FakeWriter)
+    monkeypatch.setattr(
+        pdf_preprocessor, "load_config", lambda: {"pdf": {"max_bytes": 100}}
+    )
+
+    # The file is under the byte cap, yet everything after the page with the
+    # References heading is still dropped.
+    assert pdf_preprocessor.truncate_pdf(b"small", main_text_only=True) == b"xx"
+    assert [len(writer.pages) for writer in FakeWriter.instances] == [2]
+
+
+def test_truncate_pdf_main_text_only_keeps_pdfs_without_references(monkeypatch):
+    import pdf_preprocessor
+
+    pages = [Mock(extract_text=lambda: "Introduction"), Mock(extract_text=lambda: "Results")]
+    monkeypatch.setattr(
+        pdf_preprocessor, "PdfReader", Mock(return_value=Mock(pages=pages))
+    )
+    monkeypatch.setattr(
+        pdf_preprocessor, "load_config", lambda: {"pdf": {"max_bytes": 100}}
+    )
+
+    assert pdf_preprocessor.truncate_pdf(b"small", main_text_only=True) == b"small"
 
 
 def test_truncate_pdf_drops_trailing_pages_until_under_limit(monkeypatch):

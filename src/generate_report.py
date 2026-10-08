@@ -340,7 +340,7 @@ def setup_argparse():
     )
     parser.add_argument(
         "--provider",
-        choices=["gemini", "deepseek"],
+        choices=["gemini", "deepseek", "claude"],
         help="One-off provider override (default: config.yaml)",
     )
     parser.add_argument(

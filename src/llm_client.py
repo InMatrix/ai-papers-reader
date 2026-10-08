@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from google import genai
+import requests
 import yaml
 from dotenv import load_dotenv
 
@@ -19,7 +20,19 @@ load_dotenv(PROJECT_ROOT / ".env")
 DEFAULT_MODELS = {
     "gemini": "gemini-flash-latest",
     "deepseek": "deepseek-v4-flash",
+    "claude": "claude-haiku-5-5",
 }
+
+# Claude models whose safety-classifier declines the API can rerun on
+# Anthropic's recommended fallback model.
+CLAUDE_FALLBACK_MODELS = {
+    "claude-fable-5-1",
+    "claude-opus-5-5",
+    "claude-opus-5",
+    "claude-sonnet-5-5",
+}
+
+GITHUB_OIDC_AUDIENCE = "https://api.anthropic.com"
 
 
 def load_config(config_path=None):
@@ -59,6 +72,45 @@ def resolve_model(provider, model=None, config=None):
     return DEFAULT_MODELS[provider]
 
 
+def _github_actions_identity_token():
+    """Request a new GitHub Actions OIDC token for one Claude token exchange."""
+    response = requests.get(
+        os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"],
+        params={"audience": GITHUB_OIDC_AUDIENCE},
+        headers={
+            "Authorization": f"Bearer {os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']}"
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["value"]
+
+
+def _create_claude_client(timeout):
+    import anthropic
+
+    if not (
+        os.getenv("ACTIONS_ID_TOKEN_REQUEST_URL")
+        and os.getenv("ANTHROPIC_FEDERATION_RULE_ID")
+    ):
+        # Without GitHub's OIDC endpoint, the SDK resolves ANTHROPIC_API_KEY,
+        # an `ant auth login` profile, or the ANTHROPIC_* federation variables.
+        return anthropic.Anthropic(timeout=timeout)
+
+    # GitHub OIDC tokens expire about five minutes after issue and Anthropic
+    # accepts each one only once, while the SDK re-exchanges before its
+    # short-lived access token expires. A token written to a file at job start
+    # would fail that refresh mid-run, so fetch a new one for every exchange.
+    credentials = anthropic.WorkloadIdentityCredentials(
+        identity_token_provider=_github_actions_identity_token,
+        federation_rule_id=os.environ["ANTHROPIC_FEDERATION_RULE_ID"],
+        organization_id=os.environ["ANTHROPIC_ORGANIZATION_ID"],
+        service_account_id=os.getenv("ANTHROPIC_SERVICE_ACCOUNT_ID") or None,
+        workspace_id=os.getenv("ANTHROPIC_WORKSPACE_ID") or None,
+    )
+    return anthropic.Anthropic(credentials=credentials, timeout=timeout)
+
+
 def create_client(provider=None):
     provider = resolve_provider(provider)
     config = load_config()
@@ -69,13 +121,16 @@ def create_client(provider=None):
             raise ValueError("GOOGLE_API_KEY environment variable is not set")
         return genai.Client(api_key=api_key)
 
+    timeout = float(config.get("llm_timeout_seconds", 120))
+    if provider == "claude":
+        return _create_claude_client(timeout)
+
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         raise ValueError("DEEPSEEK_API_KEY environment variable is not set")
 
     from openai import OpenAI
 
-    timeout = float(config.get("llm_timeout_seconds", 120))
     return OpenAI(
         api_key=api_key,
         base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
@@ -84,8 +139,54 @@ def create_client(provider=None):
     )
 
 
+def _generate_claude_text(client, content, model):
+    """Return Claude's reply to a prompt string or a list of content blocks."""
+    # Current Claude models reject sampling parameters such as temperature and
+    # have no schema-free JSON mode, so, as with DeepSeek, the prompts
+    # themselves ask for raw JSON where the pipeline needs it.
+    kwargs = {
+        "model": model,
+        # Adaptive thinking counts toward max_tokens, so leave ample headroom.
+        "max_tokens": 64000,
+        "messages": [{"role": "user", "content": content}],
+        # Medium is the default on Haiku 5.5 and Opus 5.5; pin it so other
+        # Claude models match.
+        "output_config": {"effort": "medium"},
+    }
+    if model in CLAUDE_FALLBACK_MODELS:
+        # Safety classifiers can decline benign papers (AI security research,
+        # for example); let the API rerun those on its recommended fallback.
+        kwargs["betas"] = ["server-side-fallback-2026-07-01"]
+        kwargs["fallbacks"] = "default"
+
+    # Streaming applies the client timeout between events rather than to the
+    # whole response, which long PDF summaries can exceed.
+    with client.beta.messages.stream(**kwargs) as stream:
+        message = stream.get_final_message()
+
+    if message.stop_reason == "refusal":
+        category = message.stop_details.category if message.stop_details else None
+        raise RuntimeError(f"Claude declined the request (category: {category})")
+    if message.stop_reason != "end_turn":
+        # These requests use no tools or stop sequences, so any other stop
+        # reason, such as max_tokens or model_context_window_exceeded, means
+        # the reply was cut off.
+        raise RuntimeError(
+            f"Claude's response is incomplete (stop_reason: {message.stop_reason})"
+        )
+    if any(
+        iteration.type == "fallback_message"
+        for iteration in message.usage.iterations or []
+    ):
+        print(f"Claude fallback model {message.model} completed the request")
+    return "".join(block.text for block in message.content if block.type == "text")
+
+
 def generate_text(client, prompt, provider, model, json_output=False, temperature=None):
     """Generate text while normalizing the response shape across providers."""
+    if provider == "claude":
+        return _generate_claude_text(client, prompt, model)
+
     if provider == "gemini":
         config = {}
         if json_output:

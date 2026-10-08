@@ -2,8 +2,11 @@
 # provider: gemini
 # model: gemini-flash-latest
 
-provider: deepseek
-model: deepseek-v4-flash
+# provider: deepseek
+# model: deepseek-v4-flash
+
+provider: claude
+model: claude-haiku-5-5
 llm_timeout_seconds: 120
 pdf:
   max_pages: 12

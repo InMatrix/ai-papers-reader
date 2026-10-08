@@ -1,15 +1,16 @@
 """
-PDF summarizer using Gemini or DeepSeek models.
+PDF summarizer using Gemini, DeepSeek, or Claude models.
 
 This script generates a summary from PDF bytes. PDF downloading and local
-preprocessing live in pdf_preprocessor.py. Gemini receives the processed PDF
-directly; DeepSeek receives text extracted locally from the PDF.
+preprocessing live in pdf_preprocessor.py. Gemini and Claude receive the
+processed PDF directly; DeepSeek receives text extracted locally from the PDF.
 
 Provider/model selection is read from the tracked config.yaml file. Credentials
 are loaded from the local .env file or the process environment.
 """
 
 import argparse
+import base64
 import os
 import tempfile
 import frontmatter
@@ -157,7 +158,30 @@ def summarize_pdf(pdf_content, client=None, provider=None, model=None):
             model=model,
         )
         return clean_markdown_blocks(response_text)
-    
+
+    if provider == "claude":
+        # Claude reads PDFs natively but bills about 3,000 tokens per page
+        # (text plus a page image), so it gets only the main text through the
+        # References heading. That also keeps most papers under Claude Haiku
+        # 5.5's 100K-token price tier. The PDF goes inline as a base64
+        # document block before the prompt.
+        claude_pdf_content = truncate_pdf(pdf_content, main_text_only=True)
+        document = {
+            "type": "document",
+            "source": {
+                "type": "base64",
+                "media_type": "application/pdf",
+                "data": base64.standard_b64encode(claude_pdf_content).decode("ascii"),
+            },
+        }
+        response_text = generate_text(
+            client,
+            [document, {"type": "text", "text": prompt}],
+            provider=provider,
+            model=model,
+        )
+        return clean_markdown_blocks(response_text)
+
     # Gemini can process PDFs directly. Keep the complete document below the
     # size cap, and use a first-pages PDF for unusually large documents.
     gemini_pdf_content = truncate_pdf(pdf_content)
@@ -302,11 +326,11 @@ def main(pdf_url, save_location, client=None, provider=None, model=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Summarize a PDF using Gemini or DeepSeek."
+        description="Summarize a PDF using Gemini, DeepSeek, or Claude."
     )
     parser.add_argument("url", help="The URL of the PDF to summarize")
     parser.add_argument("--save_location", default="docs/summaries", help="Directory to save the summary file. Default is 'docs/summaries'.")
-    parser.add_argument("--provider", choices=["gemini", "deepseek"], help="LLM provider")
+    parser.add_argument("--provider", choices=["gemini", "deepseek", "claude"], help="LLM provider")
     parser.add_argument("--model", help="Model ID")
     args = parser.parse_args()
 

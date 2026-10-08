@@ -2,6 +2,9 @@
 requests
 google-genai
 openai
+# 1.12 is the earliest tested release with Workload Identity Federation
+# credentials and server-side refusal fallbacks.
+anthropic>=1.12
 pypdf
 pyyaml
 python-frontmatter
