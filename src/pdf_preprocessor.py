@@ -293,8 +293,12 @@ def extract_pdf_text(pdf_content, max_pages=None, max_bytes=None):
     return text
 
 
-def truncate_pdf(pdf_content, max_pages=None, max_bytes=None):
-    """Remove references and apply size/page limits when needed."""
+def truncate_pdf(pdf_content, max_pages=None, max_bytes=None, main_text_only=False):
+    """Remove references and apply size/page limits when needed.
+
+    With ``main_text_only``, a PDF of any size ends on the page with its
+    References heading, dropping the reference list and any appendices.
+    """
     pdf_config = _pdf_config()
     if max_bytes is None:
         max_bytes = int(pdf_config.get("max_bytes", DEFAULT_MAX_BYTES))
@@ -306,11 +310,28 @@ def truncate_pdf(pdf_content, max_pages=None, max_bytes=None):
         raise ValueError("pdf.max_pages must be at least 1")
 
     oversized = len(pdf_content) > max_bytes
-    if not oversized:
+    if not oversized and not main_text_only:
         return pdf_content
 
     reader = PdfReader(BytesIO(pdf_content))
     references_page = find_references_page(reader, pdf_config)
+
+    if (
+        main_text_only
+        and references_page is not None
+        and 0 < references_page < len(reader.pages) - 1
+    ):
+        # Keep the heading's own page: conclusions and limitations sections
+        # often end on it.
+        main_text = _write_pdf_pages(reader, references_page + 1)
+        if len(main_text) <= max_bytes:
+            print(
+                f"Keeping the main text: the first {references_page + 1} of "
+                f"{len(reader.pages)} pages, through the References heading"
+            )
+            return main_text
+    if not oversized:
+        return pdf_content
 
     # Prefer the complete paper body when a References heading is detected.
     # If that still exceeds the byte cap, fall back to the configured hard

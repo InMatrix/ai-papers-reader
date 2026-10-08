@@ -22,13 +22,13 @@ Provider and model selection live in the committed [config.yaml](config.yaml). T
 | --- | --- | --- |
 | Gemini | `gemini-flash-latest` | `GOOGLE_API_KEY` |
 | DeepSeek | `deepseek-v4-flash` | `DEEPSEEK_API_KEY` |
-| Claude | `claude-opus-5-5` | `ANTHROPIC_API_KEY` or `ant auth login` locally; Workload Identity Federation in GitHub Actions |
+| Claude | `claude-haiku-5-5` | `ANTHROPIC_API_KEY` or `ant auth login` locally; Workload Identity Federation in GitHub Actions |
 
 The current committed selection is Claude:
 
 ```yaml
 provider: claude
-model: claude-opus-5-5
+model: claude-haiku-5-5
 ```
 
 To use Gemini or DeepSeek instead, change those two values to one of:
@@ -59,7 +59,7 @@ python src/generate_report.py
 
 DeepSeek PDF summarization extracts text locally, so scanned PDFs without a text layer are not supported.
 
-PDF handling is bounded for reliability: every provider receives the complete paper when its PDF is under the configured 15 MiB default (Gemini and Claude read the PDF itself). For oversized PDFs, text extraction/PDF input first tries the complete body before a configurable References/Bibliography heading, then drops trailing pages one at a time from the configured page limit until the generated PDF fits. Downloads stream in chunks and retry transient network/HTTP failures with exponential backoff; tune the PDF timeout/retry settings in `config.yaml` as needed. Set `pdf.stop_at_references` to `false` or customize `pdf.references_headings` when needed.
+PDF handling is bounded for reliability: Gemini and DeepSeek receive the complete paper when its PDF is under the configured 15 MiB default. Claude, which reads the PDF itself at about 3,000 tokens per page, receives only the main text: each PDF ends on the page with its References/Bibliography heading. Dropping the reference list and appendices typically removes about two-thirds of a paper's pages and keeps most requests under Claude Haiku 5.5's 100K-token price tier. For oversized PDFs, text extraction/PDF input first tries the complete body before a configurable References/Bibliography heading, then drops trailing pages one at a time from the configured page limit until the generated PDF fits. Downloads stream in chunks and retry transient network/HTTP failures with exponential backoff; tune the PDF timeout/retry settings in `config.yaml` as needed. Set `pdf.stop_at_references` to `false` or customize `pdf.references_headings` when needed.
 
 For GitHub Actions, commit the desired `config.yaml` selection. Gemini and DeepSeek read their API key from a repository secret (`GOOGLE_API_KEY` or `DEEPSEEK_API_KEY`).
 

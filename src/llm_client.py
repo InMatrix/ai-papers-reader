@@ -20,7 +20,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 DEFAULT_MODELS = {
     "gemini": "gemini-flash-latest",
     "deepseek": "deepseek-v4-flash",
-    "claude": "claude-opus-5-5",
+    "claude": "claude-haiku-5-5",
 }
 
 # Claude models whose safety-classifier declines the API can rerun on
@@ -149,7 +149,8 @@ def _generate_claude_text(client, content, model):
         # Adaptive thinking counts toward max_tokens, so leave ample headroom.
         "max_tokens": 64000,
         "messages": [{"role": "user", "content": content}],
-        # Medium is Claude Opus 5.5's default; pin it so other models match.
+        # Medium is the default on Haiku 5.5 and Opus 5.5; pin it so other
+        # Claude models match.
         "output_config": {"effort": "medium"},
     }
     if model in CLAUDE_FALLBACK_MODELS:

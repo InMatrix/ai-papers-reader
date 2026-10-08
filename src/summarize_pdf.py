@@ -160,9 +160,12 @@ def summarize_pdf(pdf_content, client=None, provider=None, model=None):
         return clean_markdown_blocks(response_text)
 
     if provider == "claude":
-        # Claude reads PDFs natively, so it gets the same size-capped PDF as
-        # Gemini, sent inline as a base64 document block before the prompt.
-        claude_pdf_content = truncate_pdf(pdf_content)
+        # Claude reads PDFs natively but bills about 3,000 tokens per page
+        # (text plus a page image), so it gets only the main text through the
+        # References heading. That also keeps most papers under Claude Haiku
+        # 5.5's 100K-token price tier. The PDF goes inline as a base64
+        # document block before the prompt.
+        claude_pdf_content = truncate_pdf(pdf_content, main_text_only=True)
         document = {
             "type": "document",
             "source": {

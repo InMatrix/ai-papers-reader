@@ -59,7 +59,7 @@ def test_resolve_model_uses_deepseek_default():
 
 
 def test_resolve_model_uses_claude_default():
-    assert resolve_model("claude", config={}) == "claude-opus-5-5"
+    assert resolve_model("claude", config={}) == "claude-haiku-5-5"
 
 
 def test_resolve_model_uses_tracked_config():
