@@ -143,7 +143,12 @@ def test_generate_text_omits_fallbacks_for_other_claude_models():
     ("stop_reason", "stop_details", "message"),
     [
         ("refusal", SimpleNamespace(category="cyber"), "declined.*cyber"),
-        ("max_tokens", None, "cut off"),
+        ("max_tokens", None, "incomplete.*max_tokens"),
+        (
+            "model_context_window_exceeded",
+            None,
+            "incomplete.*model_context_window_exceeded",
+        ),
     ],
 )
 def test_generate_text_rejects_incomplete_claude_responses(

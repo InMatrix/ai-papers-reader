@@ -167,8 +167,13 @@ def _generate_claude_text(client, content, model):
     if message.stop_reason == "refusal":
         category = message.stop_details.category if message.stop_details else None
         raise RuntimeError(f"Claude declined the request (category: {category})")
-    if message.stop_reason == "max_tokens":
-        raise RuntimeError("Claude's response was cut off at max_tokens")
+    if message.stop_reason != "end_turn":
+        # These requests use no tools or stop sequences, so any other stop
+        # reason, such as max_tokens or model_context_window_exceeded, means
+        # the reply was cut off.
+        raise RuntimeError(
+            f"Claude's response is incomplete (stop_reason: {message.stop_reason})"
+        )
     if any(
         iteration.type == "fallback_message"
         for iteration in message.usage.iterations or []
