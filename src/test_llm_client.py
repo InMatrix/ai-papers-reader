@@ -123,14 +123,14 @@ def test_generate_text_streams_claude_with_fallbacks_and_no_temperature():
         client,
         "prompt",
         provider="claude",
-        model="claude-opus-5-5",
+        model="claude-sonnet-5-5",
         json_output=True,
         temperature=0.7,
     )
 
     assert result == "[]"
     client.beta.messages.stream.assert_called_once_with(
-        model="claude-opus-5-5",
+        model="claude-sonnet-5-5",
         max_tokens=64000,
         messages=[{"role": "user", "content": "prompt"}],
         output_config={"effort": "medium"},
@@ -139,10 +139,14 @@ def test_generate_text_streams_claude_with_fallbacks_and_no_temperature():
     )
 
 
-def test_generate_text_omits_fallbacks_for_other_claude_models():
+@pytest.mark.parametrize(
+    "model",
+    ["claude-haiku-5-5", "claude-opus-5-5", "claude-opus-5", "claude-fable-5-1"],
+)
+def test_generate_text_omits_fallbacks_for_other_claude_models(model):
     client = claude_client(claude_message())
 
-    generate_text(client, "prompt", provider="claude", model="claude-haiku-5-5")
+    generate_text(client, "prompt", provider="claude", model=model)
 
     request = client.beta.messages.stream.call_args.kwargs
     assert "fallbacks" not in request
@@ -204,6 +208,25 @@ def test_claude_usage_prices_long_haiku_prompts_on_the_higher_rate_card(monkeypa
 
     # 200,000 input tokens at $0.50 and 2,000 output tokens at $2.50 per million.
     assert claude_usage_summary()[0].endswith("estimated cost $0.1050")
+
+
+def test_claude_usage_prices_a_fallback_reply_under_the_model_that_served_it(
+    monkeypatch,
+):
+    monkeypatch.setattr(llm_client, "_claude_usage", {})
+    message = claude_message(
+        model="claude-sonnet-5", input_tokens=50_000, output_tokens=1_000
+    )
+
+    generate_text(
+        claude_client(message), "prompt", provider="claude", model="claude-sonnet-5-5"
+    )
+
+    # 50,000 input tokens at $2 and 1,000 output tokens at $10 per million.
+    assert claude_usage_summary() == [
+        "claude-sonnet-5: 1 request, 50,000 input and 1,000 output tokens, "
+        "estimated cost $0.1100"
+    ]
 
 
 def test_claude_usage_counts_refused_requests(monkeypatch):

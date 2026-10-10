@@ -24,13 +24,11 @@ DEFAULT_MODELS = {
 }
 
 # Claude models whose safety-classifier declines the API can rerun on
-# Anthropic's recommended fallback model.
-CLAUDE_FALLBACK_MODELS = {
-    "claude-fable-5-1",
-    "claude-opus-5-5",
-    "claude-opus-5",
-    "claude-sonnet-5-5",
-}
+# Anthropic's recommended fallback model. Only Claude Sonnet 5.5 opts in: its
+# fallback, Claude Sonnet 5, costs the same, while the Opus and Fable models
+# are too expensive for this pipeline. Claude Haiku 5.5 has no server-side
+# fallback.
+CLAUDE_FALLBACK_MODELS = {"claude-sonnet-5-5"}
 
 # Anthropic's list prices in USD per million input and output tokens, used to
 # estimate what each run spent. The amount actually billed is only available
@@ -40,6 +38,7 @@ CLAUDE_PRICES = {
     "claude-opus-5-5": (4.00, 20.00),
     "claude-opus-5": (5.00, 25.00),
     "claude-sonnet-5-5": (2.00, 10.00),
+    "claude-sonnet-5": (2.00, 10.00),
     "claude-haiku-5-5": (0.10, 0.50),
 }
 # Claude Haiku 5.5 bills a request on a second rate card when its prompt is
