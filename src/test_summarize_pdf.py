@@ -122,7 +122,7 @@ def test_summarize_pdf_with_claude_sends_main_text_pdf_document():
         content=[SimpleNamespace(type="text", text="```markdown\n# Summary\nBody\n```")],
         stop_reason="end_turn",
         stop_details=None,
-        usage=SimpleNamespace(iterations=None),
+        usage=SimpleNamespace(iterations=None, input_tokens=30000, output_tokens=900),
         model="claude-opus-5-5",
     )
 

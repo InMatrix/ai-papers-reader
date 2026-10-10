@@ -35,7 +35,7 @@ The pipeline flows: **Hugging Face API → Fetch → Filter/Summarize with LLM �
 Key components in `src/`:
 - `fetch_papers.py` - Fetches paper metadata from Hugging Face Daily Papers API
 - `generate_report.py` - Uses the configured LLM provider to filter papers and generate summaries
-- `llm_client.py` - Provider/model resolution, client creation (including Claude Workload Identity Federation in GitHub Actions), and text generation
+- `llm_client.py` - Provider/model resolution, client creation (including Claude Workload Identity Federation in GitHub Actions), text generation, and Claude token usage with an estimated cost
 - `pdf_preprocessor.py` - Resilient PDF downloading, text extraction, and size/section preprocessing
 - `summarize_pdf.py` - Provider calls and markdown summary generation
 - `json_to_markdown.py` - Converts JSON reports to markdown for web publishing
@@ -61,3 +61,5 @@ GitHub Actions workflows in `.github/workflows/`:
 - `retrigger_reports.yml` - Manual trigger to retry failed paper processing
 
 Both workflows use the provider and model committed in `config.yaml`. Gemini and DeepSeek use the corresponding repository secret. Claude uses Workload Identity Federation instead: the jobs grant `id-token: write` and set the non-secret `ANTHROPIC_*` IDs, and `llm_client.py` fetches a fresh GitHub OIDC token for every token exchange because each token expires in about five minutes and can be exchanged only once.
+
+A run is marked as failed when a pipeline step fails or a paper cannot be summarized (`generate_report.py` exits non-zero after saving the report, and leaves the week unfinished in `status.json` so the retrigger workflow redoes it). The commit step still runs unless the run is cancelled, so the fetched metadata and any finished reports are pushed first. Claude runs print their token usage and an estimated cost, from the list prices in `CLAUDE_PRICES` in `llm_client.py`, and add the same line to the GitHub job summary.

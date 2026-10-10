@@ -7,6 +7,7 @@ import pytest
 import llm_client
 from llm_client import (
     _github_actions_identity_token,
+    claude_usage_summary,
     create_client,
     generate_text,
     load_config,
@@ -15,7 +16,14 @@ from llm_client import (
 )
 
 
-def claude_message(text="response", stop_reason="end_turn", stop_details=None):
+def claude_message(
+    text="response",
+    stop_reason="end_turn",
+    stop_details=None,
+    model="claude-opus-5-5",
+    input_tokens=1000,
+    output_tokens=200,
+):
     return SimpleNamespace(
         content=[
             SimpleNamespace(type="thinking", thinking=""),
@@ -23,8 +31,10 @@ def claude_message(text="response", stop_reason="end_turn", stop_details=None):
         ],
         stop_reason=stop_reason,
         stop_details=stop_details,
-        usage=SimpleNamespace(iterations=None),
-        model="claude-opus-5-5",
+        usage=SimpleNamespace(
+            iterations=None, input_tokens=input_tokens, output_tokens=output_tokens
+        ),
+        model=model,
     )
 
 
@@ -113,14 +123,14 @@ def test_generate_text_streams_claude_with_fallbacks_and_no_temperature():
         client,
         "prompt",
         provider="claude",
-        model="claude-opus-5-5",
+        model="claude-sonnet-5-5",
         json_output=True,
         temperature=0.7,
     )
 
     assert result == "[]"
     client.beta.messages.stream.assert_called_once_with(
-        model="claude-opus-5-5",
+        model="claude-sonnet-5-5",
         max_tokens=64000,
         messages=[{"role": "user", "content": "prompt"}],
         output_config={"effort": "medium"},
@@ -129,10 +139,14 @@ def test_generate_text_streams_claude_with_fallbacks_and_no_temperature():
     )
 
 
-def test_generate_text_omits_fallbacks_for_other_claude_models():
+@pytest.mark.parametrize(
+    "model",
+    ["claude-haiku-5-5", "claude-opus-5-5", "claude-opus-5", "claude-fable-5-1"],
+)
+def test_generate_text_omits_fallbacks_for_other_claude_models(model):
     client = claude_client(claude_message())
 
-    generate_text(client, "prompt", provider="claude", model="claude-haiku-5-5")
+    generate_text(client, "prompt", provider="claude", model=model)
 
     request = client.beta.messages.stream.call_args.kwargs
     assert "fallbacks" not in request
@@ -160,6 +174,83 @@ def test_generate_text_rejects_incomplete_claude_responses(
 
     with pytest.raises(RuntimeError, match=message):
         generate_text(client, "prompt", provider="claude", model="claude-opus-5-5")
+
+
+def test_claude_usage_summary_totals_requests_and_estimates_cost(monkeypatch):
+    monkeypatch.setattr(llm_client, "_claude_usage", {})
+
+    for input_tokens, output_tokens in [(40_000, 2_000), (60_000, 1_000)]:
+        message = claude_message(
+            model="claude-haiku-5-5",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+        generate_text(
+            claude_client(message), "prompt", provider="claude", model="claude-haiku-5-5"
+        )
+
+    # 100,000 input tokens at $0.10 and 3,000 output tokens at $0.50 per million.
+    assert claude_usage_summary() == [
+        "claude-haiku-5-5: 2 requests, 100,000 input and 3,000 output tokens, "
+        "estimated cost $0.0115"
+    ]
+
+
+def test_claude_usage_prices_long_haiku_prompts_on_the_higher_rate_card(monkeypatch):
+    monkeypatch.setattr(llm_client, "_claude_usage", {})
+    message = claude_message(
+        model="claude-haiku-5-5", input_tokens=200_000, output_tokens=2_000
+    )
+
+    generate_text(
+        claude_client(message), "prompt", provider="claude", model="claude-haiku-5-5"
+    )
+
+    # 200,000 input tokens at $0.50 and 2,000 output tokens at $2.50 per million.
+    assert claude_usage_summary()[0].endswith("estimated cost $0.1050")
+
+
+def test_claude_usage_prices_a_fallback_reply_under_the_model_that_served_it(
+    monkeypatch,
+):
+    monkeypatch.setattr(llm_client, "_claude_usage", {})
+    message = claude_message(
+        model="claude-sonnet-5", input_tokens=50_000, output_tokens=1_000
+    )
+
+    generate_text(
+        claude_client(message), "prompt", provider="claude", model="claude-sonnet-5-5"
+    )
+
+    # 50,000 input tokens at $2 and 1,000 output tokens at $10 per million.
+    assert claude_usage_summary() == [
+        "claude-sonnet-5: 1 request, 50,000 input and 1,000 output tokens, "
+        "estimated cost $0.1100"
+    ]
+
+
+def test_claude_usage_counts_refused_requests(monkeypatch):
+    monkeypatch.setattr(llm_client, "_claude_usage", {})
+    client = claude_client(
+        claude_message(stop_reason="refusal", stop_details=SimpleNamespace(category="cyber"))
+    )
+
+    with pytest.raises(RuntimeError):
+        generate_text(client, "prompt", provider="claude", model="claude-opus-5-5")
+
+    assert claude_usage_summary()[0].startswith("claude-opus-5-5: 1 request,")
+
+
+def test_claude_usage_summary_reports_tokens_for_unpriced_models(monkeypatch):
+    monkeypatch.setattr(llm_client, "_claude_usage", {})
+    message = claude_message(model="claude-next", input_tokens=500, output_tokens=50)
+
+    generate_text(claude_client(message), "prompt", provider="claude", model="claude-next")
+
+    assert claude_usage_summary() == [
+        "claude-next: 1 request, 500 input and 50 output tokens, "
+        "no list price recorded for this model"
+    ]
 
 
 def test_github_actions_identity_token_requests_anthropic_audience(monkeypatch):

@@ -24,13 +24,30 @@ DEFAULT_MODELS = {
 }
 
 # Claude models whose safety-classifier declines the API can rerun on
-# Anthropic's recommended fallback model.
-CLAUDE_FALLBACK_MODELS = {
-    "claude-fable-5-1",
-    "claude-opus-5-5",
-    "claude-opus-5",
-    "claude-sonnet-5-5",
+# Anthropic's recommended fallback model. Only Claude Sonnet 5.5 opts in: its
+# fallback, Claude Sonnet 5, costs the same, while the Opus and Fable models
+# are too expensive for this pipeline. Claude Haiku 5.5 has no server-side
+# fallback.
+CLAUDE_FALLBACK_MODELS = {"claude-sonnet-5-5"}
+
+# Anthropic's list prices in USD per million input and output tokens, used to
+# estimate what each run spent. The amount actually billed is only available
+# from the Admin API's cost report, which needs an admin credential.
+CLAUDE_PRICES = {
+    "claude-fable-5-1": (10.00, 50.00),
+    "claude-opus-5-5": (4.00, 20.00),
+    "claude-opus-5": (5.00, 25.00),
+    "claude-sonnet-5-5": (2.00, 10.00),
+    "claude-sonnet-5": (2.00, 10.00),
+    "claude-haiku-5-5": (0.10, 0.50),
 }
+# Claude Haiku 5.5 bills a request on a second rate card when its prompt is
+# longer than 100K tokens.
+CLAUDE_HAIKU_LONG_PROMPT_TOKENS = 100_000
+CLAUDE_HAIKU_LONG_PROMPT_PRICES = (0.50, 2.50)
+
+# Requests, tokens, and estimated cost per Claude model in this process.
+_claude_usage = {}
 
 GITHUB_OIDC_AUDIENCE = "https://api.anthropic.com"
 
@@ -139,6 +156,52 @@ def create_client(provider=None):
     )
 
 
+def _record_claude_usage(message, requested_model):
+    """Add one Claude response to this process's usage totals."""
+    usage = message.usage
+    # A fallback model's reply is priced at that model's rates when they are
+    # listed. Top-level usage covers only the attempt that produced the reply,
+    # so an attempt the first model declined is not counted.
+    model = message.model if message.model in CLAUDE_PRICES else requested_model
+    prices = CLAUDE_PRICES.get(model)
+    # The pipeline sets no cache_control, so input_tokens is the whole prompt.
+    if (
+        model == "claude-haiku-5-5"
+        and usage.input_tokens > CLAUDE_HAIKU_LONG_PROMPT_TOKENS
+    ):
+        prices = CLAUDE_HAIKU_LONG_PROMPT_PRICES
+
+    totals = _claude_usage.setdefault(
+        model, {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cost": 0.0}
+    )
+    totals["requests"] += 1
+    totals["input_tokens"] += usage.input_tokens
+    totals["output_tokens"] += usage.output_tokens
+    if prices:
+        input_price, output_price = prices
+        totals["cost"] += (
+            usage.input_tokens * input_price + usage.output_tokens * output_price
+        ) / 1_000_000
+
+
+def claude_usage_summary():
+    """Describe this process's Claude usage and estimated cost, one line per model."""
+    lines = []
+    for model, totals in _claude_usage.items():
+        requests_label = "request" if totals["requests"] == 1 else "requests"
+        line = (
+            f"{model}: {totals['requests']} {requests_label}, "
+            f"{totals['input_tokens']:,} input and "
+            f"{totals['output_tokens']:,} output tokens"
+        )
+        if model in CLAUDE_PRICES:
+            line += f", estimated cost ${totals['cost']:.4f}"
+        else:
+            line += ", no list price recorded for this model"
+        lines.append(line)
+    return lines
+
+
 def _generate_claude_text(client, content, model):
     """Return Claude's reply to a prompt string or a list of content blocks."""
     # Current Claude models reject sampling parameters such as temperature and
@@ -163,6 +226,9 @@ def _generate_claude_text(client, content, model):
     # whole response, which long PDF summaries can exceed.
     with client.beta.messages.stream(**kwargs) as stream:
         message = stream.get_final_message()
+
+    # Refused and truncated replies are recorded too.
+    _record_claude_usage(message, model)
 
     if message.stop_reason == "refusal":
         category = message.stop_details.category if message.stop_details else None

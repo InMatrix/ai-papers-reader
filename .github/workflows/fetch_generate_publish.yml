@@ -41,6 +41,10 @@ jobs:
         bash src/fetch_generate_publish.sh
 
     - name: Commit and push changes
+      # Also runs after a failed pipeline step, so partial output (such as the
+      # fetched metadata that the retrigger workflow needs) is still committed
+      # while the run itself is marked as failed.
+      if: ${{ !cancelled() }}
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'

@@ -2,6 +2,7 @@ import os
 import json
 import glob
 import subprocess
+import sys
 import time
 from generate_report import extract_date_from_paper_data_path
 
@@ -63,6 +64,8 @@ def backfill_status():
 def process_incomplete():
     """
     Finds unprocessed or incomplete data files and runs generate_report.py for them.
+
+    Returns the names of the data files whose report generation failed.
     """
     print("Checking for incomplete items...")
 
@@ -78,6 +81,8 @@ def process_incomplete():
     paper_files = glob.glob(os.path.join(PAPER_DATA_DIR, "paper_metadata_*.txt"))
     # Sort to process oldest first (or newest? usually oldest to catch up)
     paper_files.sort()
+
+    failed_files = []
 
     for paper_path in paper_files:
         filename = os.path.basename(paper_path)
@@ -105,7 +110,10 @@ def process_incomplete():
             except subprocess.CalledProcessError as e:
                 print(f"Error processing {filename}: {e}")
                 # Continue to next file instead of crashing the whole pipeline
+                failed_files.append(filename)
                 continue
+
+    return failed_files
 
 
 def main():
@@ -113,7 +121,7 @@ def main():
     backfill_status()
 
     # 2. Process anything that is still pending
-    process_incomplete()
+    failures = process_incomplete()
 
     # 3. Update the index
     print("Updating report index...")
@@ -121,6 +129,11 @@ def main():
         subprocess.run(["python", "src/list_md_files.py"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error updating index: {e}")
+        failures.append("the report index")
+
+    # 4. Exit non-zero so the workflow run is marked as failed
+    if failures:
+        sys.exit(f"Retrigger failed for: {', '.join(failures)}")
 
 if __name__ == "__main__":
     main()

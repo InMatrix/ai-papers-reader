@@ -37,6 +37,9 @@ jobs:
         python src/retrigger_unprocessed.py
 
     - name: Commit and push changes
+      # Also runs after a failed retrigger step, so the reports that did
+      # generate are still committed while the run itself is marked as failed.
+      if: ${{ !cancelled() }}
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
