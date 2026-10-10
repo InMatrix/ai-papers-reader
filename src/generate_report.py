@@ -248,6 +248,8 @@ def generate_report(
             )
             if not topic_description:
                 print(f"Warning: Topic description not found for {topic['topic']}")
+                # None of this topic's papers get a summary or relevance check
+                failed_papers.extend(paper.get("title") for paper in topic["papers"])
                 continue
 
             # Iterate over a copy to allow modification of the original list
@@ -317,23 +319,30 @@ def generate_report(
                 # Save markdown after every paper processed
                 markdown_content = save_markdown(response_json)
 
-    update_status(paper_data_path, {"final_report_generated": True})
-
     if failed_papers:
-        # The report is saved without these papers' summaries. Raising makes
+        # The report is saved without these papers' summaries, and is left
+        # unfinished so the retrigger workflow redoes the week. Raising makes
         # the run exit non-zero instead of passing as a clean success. A paper
         # listed under two topics is reported once.
+        update_status(paper_data_path, {"final_report_generated": False})
         failed_papers = list(dict.fromkeys(failed_papers))
         raise RuntimeError(
             f"Could not summarize {len(failed_papers)} paper(s): "
             + "; ".join(str(title) for title in failed_papers)
         )
+
+    update_status(paper_data_path, {"final_report_generated": True})
     return markdown_content
 
 
-def report_api_spend(date_string):
+def report_api_spend(date_string, provider, model):
     """Print the run's estimated Claude spend and add it to the GitHub job summary."""
-    for usage in claude_usage_summary():
+    if provider != "claude":
+        return
+
+    # A run that failed before Claude returned any reply still gets a line.
+    usage_lines = claude_usage_summary() or [f"{model}: no completed requests"]
+    for usage in usage_lines:
         line = f"API spend for the {date_string} report: {usage}"
         print(line)
         # GitHub Actions shows what is written here on the run's summary page.
@@ -419,7 +428,7 @@ def main():
         )
     finally:
         # Report the spend even when the run fails partway.
-        report_api_spend(date_string)
+        report_api_spend(date_string, provider, model)
 
     print(f"Report generated and saved to {args.report_path}")
 

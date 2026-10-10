@@ -3,7 +3,7 @@ import generate_report as generate_report_module
 from generate_report import inflate_prompt, generate_report
 import yaml
 import shutil
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, call, patch, MagicMock
 import json
 import os
 
@@ -164,8 +164,9 @@ def test_generate_report_saves_partial_on_error(tmp_path):
         assert report_path.exists()
         # Initial status update should have happened
         mock_update_status.assert_any_call(str(paper_data_path), {"initial_report_generated": True})
-        # The report is still marked final, so the retrigger workflow does not redo it
-        mock_update_status.assert_any_call(str(paper_data_path), {"final_report_generated": True})
+        # The report is not marked final, so the retrigger workflow redoes the week
+        mock_update_status.assert_any_call(str(paper_data_path), {"final_report_generated": False})
+        assert call(str(paper_data_path), {"final_report_generated": True}) not in mock_update_status.call_args_list
 
 def test_generate_report_fails_when_summary_is_empty(tmp_path):
     report_path = tmp_path / "report.md"
@@ -185,22 +186,54 @@ def test_generate_report_fails_when_summary_is_empty(tmp_path):
 
     assert report_path.exists()
 
+def test_generate_report_fails_when_topic_description_is_missing(tmp_path):
+    report_path = tmp_path / "report.md"
+    paper_data_path = tmp_path / "paper_data.txt"
+
+    mock_client = Mock()
+    mock_client.models.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
+
+    # The model's topic name matches none of the configured topics
+    topics = [{"topic": "Another Topic", "description": "Desc"}]
+
+    with patch('generate_report.summarize_pdf.pdf_to_summary') as mock_pdf_to_summary, \
+         patch('generate_report.update_status') as mock_update_status:
+
+        with pytest.raises(RuntimeError, match=r"Could not summarize 1 paper\(s\): Paper 1"):
+            generate_report(mock_client, "dummy prompt", topics, str(paper_data_path), "2023-10-27", str(report_path))
+
+        mock_pdf_to_summary.assert_not_called()
+        mock_update_status.assert_any_call(str(paper_data_path), {"final_report_generated": False})
+
+    assert report_path.exists()
+
 def test_report_api_spend_prints_and_writes_job_summary(tmp_path, monkeypatch, capsys):
     summary_path = tmp_path / "step_summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_path))
     usage = "claude-haiku-5-5: 2 requests, 100,000 input and 3,000 output tokens, estimated cost $0.0115"
 
     with patch('generate_report.claude_usage_summary', return_value=[usage]):
-        generate_report_module.report_api_spend("2023-10-27")
+        generate_report_module.report_api_spend("2023-10-27", "claude", "claude-haiku-5-5")
 
     line = f"API spend for the 2023-10-27 report: {usage}"
     assert line in capsys.readouterr().out
     assert summary_path.read_text() == f"{line}\n\n"
 
-def test_report_api_spend_is_silent_without_claude_usage(monkeypatch, capsys):
+def test_report_api_spend_reports_a_claude_run_with_no_completed_requests(monkeypatch, capsys):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
 
     with patch('generate_report.claude_usage_summary', return_value=[]):
-        generate_report_module.report_api_spend("2023-10-27")
+        generate_report_module.report_api_spend("2023-10-27", "claude", "claude-haiku-5-5")
+
+    assert capsys.readouterr().out == (
+        "API spend for the 2023-10-27 report: claude-haiku-5-5: no completed requests\n"
+    )
+
+@pytest.mark.parametrize("provider", ["gemini", "deepseek"])
+def test_report_api_spend_is_silent_for_other_providers(provider, monkeypatch, capsys):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+
+    with patch('generate_report.claude_usage_summary', return_value=[]):
+        generate_report_module.report_api_spend("2023-10-27", provider, "some-model")
 
     assert capsys.readouterr().out == ""
