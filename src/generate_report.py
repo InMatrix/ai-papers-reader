@@ -5,6 +5,7 @@ import yaml
 import time
 import summarize_pdf
 from llm_client import (
+    claude_usage_summary,
     create_client,
     generate_text,
     load_config,
@@ -236,6 +237,8 @@ def generate_report(
     markdown_content = save_markdown(response_json)
     update_status(paper_data_path, {"initial_report_generated": True})
 
+    failed_papers = []
+
     if not skip_summary:
         summary_save_location = os.path.join("docs", date_string)
 
@@ -305,15 +308,39 @@ def generate_report(
                             )
                     else:
                         print(f"Failed to generate summary for {paper.get('title')}")
+                        failed_papers.append(paper.get("title"))
 
                 except Exception as e:
                     print(f"Error processing paper {paper.get('title')}: {e}")
+                    failed_papers.append(paper.get("title"))
 
                 # Save markdown after every paper processed
                 markdown_content = save_markdown(response_json)
 
     update_status(paper_data_path, {"final_report_generated": True})
+
+    if failed_papers:
+        # The report is saved without these papers' summaries. Raising makes
+        # the run exit non-zero instead of passing as a clean success. A paper
+        # listed under two topics is reported once.
+        failed_papers = list(dict.fromkeys(failed_papers))
+        raise RuntimeError(
+            f"Could not summarize {len(failed_papers)} paper(s): "
+            + "; ".join(str(title) for title in failed_papers)
+        )
     return markdown_content
+
+
+def report_api_spend(date_string):
+    """Print the run's estimated Claude spend and add it to the GitHub job summary."""
+    for usage in claude_usage_summary():
+        line = f"API spend for the {date_string} report: {usage}"
+        print(line)
+        # GitHub Actions shows what is written here on the run's summary page.
+        summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+        if summary_path:
+            with open(summary_path, "a") as file:
+                file.write(f"{line}\n\n")
 
 
 def extract_date_from_paper_data_path(paper_data_path):
@@ -378,17 +405,21 @@ def main():
     # Initialize status entry
     update_status(args.paper_data_path, {})
 
-    generate_report(
-        client,
-        prompt,
-        topics,
-        args.paper_data_path,
-        date_string,
-        args.report_path,
-        skip_summary=args.skip_summary,
-        provider=provider,
-        model=model,
-    )
+    try:
+        generate_report(
+            client,
+            prompt,
+            topics,
+            args.paper_data_path,
+            date_string,
+            args.report_path,
+            skip_summary=args.skip_summary,
+            provider=provider,
+            model=model,
+        )
+    finally:
+        # Report the spend even when the run fails partway.
+        report_api_spend(date_string)
 
     print(f"Report generated and saved to {args.report_path}")
 

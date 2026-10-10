@@ -1,4 +1,5 @@
 import pytest
+import generate_report as generate_report_module
 from generate_report import inflate_prompt, generate_report
 import yaml
 import shutil
@@ -155,9 +156,51 @@ def test_generate_report_saves_partial_on_error(tmp_path):
         mock_get_path.return_value = str(tmp_path / "summary.md")
         mock_pdf_to_summary.side_effect = Exception("Quota exceeded")
 
-        generate_report(mock_client, prompt, topics, str(paper_data_path), date_string, str(report_path))
+        # The failure is raised once the rest of the report has been saved
+        with pytest.raises(RuntimeError, match=r"Could not summarize 1 paper\(s\): Paper 1"):
+            generate_report(mock_client, prompt, topics, str(paper_data_path), date_string, str(report_path))
 
         # Should still have saved initial report and potentially partial updates (though here it failed on first paper)
         assert report_path.exists()
         # Initial status update should have happened
         mock_update_status.assert_any_call(str(paper_data_path), {"initial_report_generated": True})
+        # The report is still marked final, so the retrigger workflow does not redo it
+        mock_update_status.assert_any_call(str(paper_data_path), {"final_report_generated": True})
+
+def test_generate_report_fails_when_summary_is_empty(tmp_path):
+    report_path = tmp_path / "report.md"
+    paper_data_path = tmp_path / "paper_data.txt"
+
+    mock_client = Mock()
+    mock_client.models.generate_content.return_value = MockModelResponse(json.dumps(mock_json_response))
+
+    topics = [{"topic": "Topic 1", "description": "Desc 1"}]
+
+    with patch('generate_report.summarize_pdf.pdf_to_summary', return_value=None), \
+         patch('generate_report.summarize_pdf.get_summary_path', return_value=str(tmp_path / "summary.md")), \
+         patch('generate_report.update_status'):
+
+        with pytest.raises(RuntimeError, match="Could not summarize 1 paper"):
+            generate_report(mock_client, "dummy prompt", topics, str(paper_data_path), "2023-10-27", str(report_path))
+
+    assert report_path.exists()
+
+def test_report_api_spend_prints_and_writes_job_summary(tmp_path, monkeypatch, capsys):
+    summary_path = tmp_path / "step_summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_path))
+    usage = "claude-haiku-5-5: 2 requests, 100,000 input and 3,000 output tokens, estimated cost $0.0115"
+
+    with patch('generate_report.claude_usage_summary', return_value=[usage]):
+        generate_report_module.report_api_spend("2023-10-27")
+
+    line = f"API spend for the 2023-10-27 report: {usage}"
+    assert line in capsys.readouterr().out
+    assert summary_path.read_text() == f"{line}\n\n"
+
+def test_report_api_spend_is_silent_without_claude_usage(monkeypatch, capsys):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+
+    with patch('generate_report.claude_usage_summary', return_value=[]):
+        generate_report_module.report_api_spend("2023-10-27")
+
+    assert capsys.readouterr().out == ""
