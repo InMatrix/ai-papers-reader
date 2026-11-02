@@ -51,7 +51,7 @@ Data flow:
 - **Topics/Filtering**: Edit `prompts/recommend_papers.txt` to customize which papers are selected
 - **LLM**: `config.yaml` currently selects `claude` with `claude-haiku-5-5`; the supported provider defaults are `gemini` with `gemini-flash-latest`, `deepseek` with `deepseek-v4-flash`, and `claude` with `claude-haiku-5-5`. CLI flags can override them for one run
 - **API Key**: `.env` (git-ignored) stores `GOOGLE_API_KEY`, `DEEPSEEK_API_KEY`, and/or `ANTHROPIC_API_KEY` for local runs (`ant auth login` also works for Claude)
-- **PDF limits**: `config.yaml` controls `llm_timeout_seconds`, the PDF `max_pages`, `max_bytes`, download timeouts/retries, and section-aware extraction/page backtracking before configurable References/Bibliography headings for oversized PDFs. Claude always receives only the main text, through the page with the References heading, regardless of size
+- **PDF limits**: `config.yaml` controls `llm_timeout_seconds`, the PDF `max_pages`, `max_bytes`, download timeouts/retries, and section-aware extraction/page backtracking before configurable References/Bibliography headings for oversized PDFs. Claude always receives only the main text, through the page with the References heading, regardless of size. On every provider, a paper whose main text exceeds `max_main_text_pages` is summarized from an excerpt, its first pages plus its last `main_text_tail_pages`, with a note below the summary's title
 - **Python Version**: 3.12
 
 ## CI/CD

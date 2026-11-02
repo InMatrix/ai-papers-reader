@@ -11,6 +11,11 @@ llm_timeout_seconds: 120
 pdf:
   max_pages: 12
   max_bytes: 15728640
+  # Main text over this many pages is summarized from an excerpt: its first pages
+  # plus its last main_text_tail_pages. At about 3,000 tokens per page, 30 pages
+  # stay under Claude Haiku 5.5's 100K-token price tier.
+  max_main_text_pages: 30
+  main_text_tail_pages: 5
   download_timeout_seconds: 120
   download_connect_timeout_seconds: 20
   download_read_timeout_seconds: 120
