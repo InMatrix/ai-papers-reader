@@ -211,7 +211,9 @@ def page_numbers(pdf_content):
     ]
 
 
-def use_page_cap(monkeypatch, max_main_text_pages=6, main_text_tail_pages=2):
+def use_page_cap(
+    monkeypatch, max_main_text_pages=6, main_text_tail_pages=2, max_bytes=1024 * 1024
+):
     monkeypatch.setattr(
         pdf_preprocessor,
         "load_config",
@@ -219,6 +221,7 @@ def use_page_cap(monkeypatch, max_main_text_pages=6, main_text_tail_pages=2):
             "pdf": {
                 "max_main_text_pages": max_main_text_pages,
                 "main_text_tail_pages": main_text_tail_pages,
+                "max_bytes": max_bytes,
             }
         },
     )
@@ -274,3 +277,52 @@ def test_cap_main_text_pages_rejects_a_tail_that_leaves_no_first_pages_or_no_las
 
     with pytest.raises(ValueError, match="main_text_tail_pages"):
         pdf_preprocessor.cap_main_text_pages(numbered_pdf(8))
+
+
+# Writing one byte per page turns the byte limit into a page limit.
+@pytest.mark.parametrize(
+    "max_bytes, kept_pages, description",
+    [
+        (4, [0, 1, 6, 7], "the first 2 and last 2 of its 8 main-text pages"),
+        (2, [0, 7], "the first 1 and last 1 of its 8 main-text pages"),
+    ],
+)
+def test_cap_main_text_pages_fits_the_byte_limit_by_dropping_first_pages_before_last(
+    monkeypatch, max_bytes, kept_pages, description
+):
+    use_page_cap(monkeypatch, max_bytes=max_bytes)
+    written = []
+
+    def write_one_byte_per_page(reader, page_numbers):
+        written.append(list(page_numbers))
+        return b"x" * len(written[-1])
+
+    monkeypatch.setattr(pdf_preprocessor, "_write_pdf_pages", write_one_byte_per_page)
+
+    excerpt, actual_description = pdf_preprocessor.cap_main_text_pages(numbered_pdf(8))
+
+    assert written[-1] == kept_pages
+    assert len(excerpt) == len(kept_pages)
+    assert actual_description == description
+
+
+def test_cap_main_text_pages_stops_at_one_page_when_nothing_fits_the_byte_limit(
+    monkeypatch,
+):
+    use_page_cap(monkeypatch, max_bytes=1)
+    monkeypatch.setattr(
+        pdf_preprocessor, "_write_pdf_pages", lambda reader, page_numbers: b"too large"
+    )
+
+    _, description = pdf_preprocessor.cap_main_text_pages(numbered_pdf(8))
+
+    assert description == "the first 1 and last 0 of its 8 main-text pages"
+
+
+def test_cap_main_text_pages_excerpt_is_not_cut_again_by_truncate_pdf(monkeypatch):
+    use_page_cap(monkeypatch, max_bytes=len(numbered_pdf(5)))
+
+    excerpt, _ = pdf_preprocessor.cap_main_text_pages(numbered_pdf(8))
+
+    assert page_numbers(excerpt)[-2:] == [6, 7]
+    assert pdf_preprocessor.truncate_pdf(excerpt, main_text_only=True) == excerpt

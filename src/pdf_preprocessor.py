@@ -251,6 +251,28 @@ def _fit_pdf_to_byte_limit(reader, max_pages, max_bytes):
     return last_content, 1
 
 
+def _fit_excerpt_to_byte_limit(
+    reader, main_text_pages, head_pages, tail_pages, max_bytes
+):
+    """Keep dropping pages until the excerpt fits the cap, saving the tail for last.
+
+    Later steps would otherwise cut an oversized excerpt down to its leading
+    pages, losing the conclusions that its description says it includes.
+    """
+    while True:
+        candidate = _write_pdf_pages(
+            reader,
+            [*range(head_pages), *range(main_text_pages - tail_pages, main_text_pages)],
+        )
+        # A single page can itself exceed the cap, and nothing smaller can be sent.
+        if len(candidate) <= max_bytes or (head_pages, tail_pages) == (1, 0):
+            return candidate, head_pages, tail_pages
+        if head_pages > 1:
+            head_pages -= 1
+        else:
+            tail_pages -= 1
+
+
 def cap_main_text_pages(pdf_content):
     """Cut an ultra-long paper down to its first and last main-text pages.
 
@@ -269,6 +291,9 @@ def cap_main_text_pages(pdf_content):
             "pdf.main_text_tail_pages must be at least 1 and below "
             "pdf.max_main_text_pages"
         )
+    max_bytes = int(pdf_config.get("max_bytes", DEFAULT_MAX_BYTES))
+    if max_bytes < 1:
+        raise ValueError("pdf.max_bytes must be at least 1")
 
     reader = PdfReader(BytesIO(pdf_content))
     page_count = len(reader.pages)
@@ -282,10 +307,8 @@ def cap_main_text_pages(pdf_content):
     if main_text_pages <= max_pages:
         return pdf_content, None
 
-    head_pages = max_pages - tail_pages
-    excerpt = _write_pdf_pages(
-        reader,
-        [*range(head_pages), *range(main_text_pages - tail_pages, main_text_pages)],
+    excerpt, head_pages, tail_pages = _fit_excerpt_to_byte_limit(
+        reader, main_text_pages, max_pages - tail_pages, tail_pages, max_bytes
     )
     description = (
         f"the first {head_pages} and last {tail_pages} of its "
