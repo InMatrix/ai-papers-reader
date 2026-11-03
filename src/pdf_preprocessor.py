@@ -12,6 +12,8 @@ from llm_client import load_config
 
 DEFAULT_MAX_PAGES = 12
 DEFAULT_MAX_BYTES = 15 * 1024 * 1024
+DEFAULT_MAX_MAIN_TEXT_PAGES = 30
+DEFAULT_MAIN_TEXT_TAIL_PAGES = 5
 DEFAULT_REFERENCE_HEADINGS = ("references", "bibliography", "works cited")
 DEFAULT_CONNECT_TIMEOUT_SECONDS = 20
 DEFAULT_READ_TIMEOUT_SECONDS = 120
@@ -174,13 +176,14 @@ def _normalize_heading(line):
 
 
 def _reference_heading_position(text, headings):
-    """Return the character offset of a references heading, if present."""
+    """Return the character offset of the last references heading, if present."""
+    position = None
     offset = 0
     for line in text.splitlines(keepends=True):
         if _normalize_heading(line.rstrip("\r\n")) in headings:
-            return offset
+            position = offset
         offset += len(line)
-    return None
+    return position
 
 
 def _page_text(page):
@@ -194,7 +197,7 @@ def _page_text(page):
 
 
 def find_references_page(reader, pdf_config=None):
-    """Return the zero-based page containing a References-style heading."""
+    """Return the zero-based page containing the last References-style heading."""
     if pdf_config is None:
         pdf_config = _pdf_config()
     elif not isinstance(pdf_config, dict):
@@ -208,17 +211,23 @@ def find_references_page(reader, pdf_config=None):
     if not headings:
         return None
 
-    for page_number, page in enumerate(reader.pages):
-        if _reference_heading_position(_page_text(page), headings) is not None:
+    # A figure or table can also be labeled "References", so use the last match:
+    # a wrong match keeps a few extra pages instead of cutting the paper's body.
+    for page_number in reversed(range(len(reader.pages))):
+        page_text = _page_text(reader.pages[page_number])
+        if _reference_heading_position(page_text, headings) is not None:
             return page_number
     return None
 
 
-def _write_pdf_pages(reader, page_count):
-    """Create a PDF containing the first ``page_count`` pages."""
+def _write_pdf_pages(reader, page_numbers):
+    """Create a PDF containing the given zero-based pages."""
     writer = PdfWriter()
-    for page in reader.pages[:page_count]:
-        writer.add_page(page)
+    for page_number in page_numbers:
+        # Skip annotations: they're nearly all links, which an LLM doesn't need,
+        # and pypdf (as of 6.21.4) crashes resolving links when a page's
+        # /MediaBox is an indirect object.
+        writer.add_page(reader.pages[page_number], excluded_keys=("/Annots",))
 
     output = BytesIO()
     writer.write(output)
@@ -232,7 +241,7 @@ def _fit_pdf_to_byte_limit(reader, max_pages, max_bytes):
         return b"", 0
     last_content = None
     for kept_pages in range(page_count, 0, -1):
-        candidate = _write_pdf_pages(reader, kept_pages)
+        candidate = _write_pdf_pages(reader, range(kept_pages))
         last_content = candidate
         if len(candidate) <= max_bytes:
             return candidate, kept_pages
@@ -240,6 +249,73 @@ def _fit_pdf_to_byte_limit(reader, max_pages, max_bytes):
     # A single page can itself exceed the configured cap. It is still the
     # smallest useful document and is preferable to returning no PDF at all.
     return last_content, 1
+
+
+def _fit_excerpt_to_byte_limit(
+    reader, main_text_pages, head_pages, tail_pages, max_bytes
+):
+    """Keep dropping pages until the excerpt fits the cap, saving the tail for last.
+
+    Later steps would otherwise cut an oversized excerpt down to its leading
+    pages, losing the conclusions that its description says it includes.
+    """
+    while True:
+        candidate = _write_pdf_pages(
+            reader,
+            [*range(head_pages), *range(main_text_pages - tail_pages, main_text_pages)],
+        )
+        # A single page can itself exceed the cap, and nothing smaller can be sent.
+        if len(candidate) <= max_bytes or (head_pages, tail_pages) == (1, 0):
+            return candidate, head_pages, tail_pages
+        if head_pages > 1:
+            head_pages -= 1
+        else:
+            tail_pages -= 1
+
+
+def cap_main_text_pages(pdf_content):
+    """Cut an ultra-long paper down to its first and last main-text pages.
+
+    Returns the PDF to send and a description of what it keeps, or the unchanged
+    PDF and None when the main text, which ends on the page with the References
+    heading, fits the cap. The first pages introduce the paper and the last ones
+    usually state its conclusions.
+    """
+    pdf_config = _pdf_config()
+    max_pages = int(pdf_config.get("max_main_text_pages", DEFAULT_MAX_MAIN_TEXT_PAGES))
+    tail_pages = int(
+        pdf_config.get("main_text_tail_pages", DEFAULT_MAIN_TEXT_TAIL_PAGES)
+    )
+    if not 1 <= tail_pages < max_pages:
+        raise ValueError(
+            "pdf.main_text_tail_pages must be at least 1 and below "
+            "pdf.max_main_text_pages"
+        )
+    max_bytes = int(pdf_config.get("max_bytes", DEFAULT_MAX_BYTES))
+    if max_bytes < 1:
+        raise ValueError("pdf.max_bytes must be at least 1")
+
+    reader = PdfReader(BytesIO(pdf_content))
+    page_count = len(reader.pages)
+    if page_count <= max_pages:
+        return pdf_content, None
+
+    references_page = find_references_page(reader, pdf_config)
+    # As in truncate_pdf, a heading on the first page leaves no main text to
+    # measure, so it counts as no heading.
+    main_text_pages = references_page + 1 if references_page else page_count
+    if main_text_pages <= max_pages:
+        return pdf_content, None
+
+    excerpt, head_pages, tail_pages = _fit_excerpt_to_byte_limit(
+        reader, main_text_pages, max_pages - tail_pages, tail_pages, max_bytes
+    )
+    description = (
+        f"the first {head_pages} and last {tail_pages} of its "
+        f"{main_text_pages} main-text pages"
+    )
+    print(f"Keeping an excerpt of this long paper: {description}")
+    return excerpt, description
 
 
 def extract_pdf_text(pdf_content, max_pages=None, max_bytes=None):
@@ -264,14 +340,16 @@ def extract_pdf_text(pdf_content, max_pages=None, max_bytes=None):
         page_limit = min(page_limit, max_pages)
 
     oversized = len(pdf_content) > max_bytes
-    headings = _reference_headings(pdf_config) if oversized else set()
+    references_page = find_references_page(reader, pdf_config) if oversized else None
     extracted_pages = []
     references_found = False
     for page_number, page in enumerate(reader.pages[:page_limit]):
         page_text = _page_text(page)
         heading_position = None
-        if oversized and pdf_config.get("stop_at_references", True) and headings:
-            heading_position = _reference_heading_position(page_text, headings)
+        if page_number == references_page:
+            heading_position = _reference_heading_position(
+                page_text, _reference_headings(pdf_config)
+            )
         if heading_position is not None:
             # Preserve an introduction or conclusion that shares a page with
             # the heading, while excluding the references themselves.
@@ -323,7 +401,7 @@ def truncate_pdf(pdf_content, max_pages=None, max_bytes=None, main_text_only=Fal
     ):
         # Keep the heading's own page: conclusions and limitations sections
         # often end on it.
-        main_text = _write_pdf_pages(reader, references_page + 1)
+        main_text = _write_pdf_pages(reader, range(references_page + 1))
         if len(main_text) <= max_bytes:
             print(
                 f"Keeping the main text: the first {references_page + 1} of "
@@ -338,7 +416,7 @@ def truncate_pdf(pdf_content, max_pages=None, max_bytes=None, main_text_only=Fal
     # page limit. A heading on page zero cannot be represented without
     # rewriting page content, so it uses the same safe fallback.
     if references_page is not None and references_page > 0:
-        body_content = _write_pdf_pages(reader, references_page)
+        body_content = _write_pdf_pages(reader, range(references_page))
         if len(body_content) <= max_bytes:
             print(
                 f"PDF is {len(pdf_content)} bytes; excluding References and "

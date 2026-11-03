@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
 from summarize_pdf import (
     clean_markdown_blocks,
+    pdf_to_summary,
     summarize_pdf,
     upload_file_with_retry,
 )
@@ -151,6 +152,71 @@ def test_summarize_pdf_with_claude_sends_main_text_pdf_document():
     assert "attached research paper" in instructions["text"]
 
 
+def test_summarize_pdf_tells_the_model_about_an_excerpt():
+    mock_client = Mock()
+    mock_client.chat.completions.create.return_value = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="# Summary\nBody"))]
+    )
+
+    with patch("summarize_pdf.extract_pdf_text", return_value="Excerpt text"):
+        summarize_pdf(
+            b"pdf content",
+            client=mock_client,
+            provider="deepseek",
+            model="deepseek-v4-flash",
+            excerpt="the first 25 and last 5 of its 79 main-text pages",
+        )
+
+    prompt = mock_client.chat.completions.create.call_args.kwargs["messages"][0]["content"]
+    assert "only the first 25 and last 5 of its 79 main-text pages are included" in prompt
+
+
+def test_pdf_to_summary_summarizes_the_excerpt_and_notes_it_below_the_title():
+    client = Mock()
+
+    with patch("summarize_pdf.download_pdf", return_value=b"%PDF-full"), patch(
+        "summarize_pdf.cap_main_text_pages",
+        return_value=(b"%PDF-excerpt", "the first 25 and last 5 of its 79 main-text pages"),
+    ), patch("summarize_pdf.summarize_pdf", return_value="# Title\nStory") as summarize:
+        result = pdf_to_summary(
+            "https://arxiv.org/pdf/2610.35671",
+            "docs/2000-01-01/2610.35671.md",
+            client=client,
+            provider="claude",
+            model="claude-haiku-5-5",
+        )
+
+    summarize.assert_called_once_with(
+        b"%PDF-excerpt",
+        client=client,
+        provider="claude",
+        model="claude-haiku-5-5",
+        excerpt="the first 25 and last 5 of its 79 main-text pages",
+    )
+    assert "title: Title" in result
+    note = (
+        "*This summary is based on an excerpt of a long paper: the first 25 and "
+        "last 5 of its 79 main-text pages.*"
+    )
+    assert result.index(note) < result.index("Story")
+
+
+def test_pdf_to_summary_adds_no_note_for_a_complete_paper():
+    with patch("summarize_pdf.download_pdf", return_value=b"%PDF-full"), patch(
+        "summarize_pdf.cap_main_text_pages", return_value=(b"%PDF-full", None)
+    ), patch("summarize_pdf.summarize_pdf", return_value="# Title\nStory") as summarize:
+        result = pdf_to_summary(
+            "https://arxiv.org/pdf/2610.34298",
+            "docs/2000-01-01/2610.34298.md",
+            client=Mock(),
+            provider="claude",
+            model="claude-haiku-5-5",
+        )
+
+    assert summarize.call_args.kwargs["excerpt"] is None
+    assert "excerpt" not in result
+
+
 def test_extract_pdf_text_limits_pages(monkeypatch):
     import pdf_preprocessor
 
@@ -174,6 +240,21 @@ def test_find_references_page_detects_numbered_heading(monkeypatch):
     assert find_references_page(reader) == 1
 
 
+def test_find_references_page_skips_earlier_figure_label(monkeypatch):
+    import pdf_preprocessor
+
+    pages = [
+        Mock(extract_text=lambda: "Pipeline\nReferences\nPrivacy screen"),
+        Mock(extract_text=lambda: "Experiments"),
+        Mock(extract_text=lambda: "Conclusion\nReferences\n[1] A paper"),
+        Mock(extract_text=lambda: "Appendix A"),
+    ]
+    reader = Mock(pages=pages)
+    monkeypatch.setattr(pdf_preprocessor, "load_config", lambda: {"pdf": {}})
+
+    assert find_references_page(reader) == 2
+
+
 def test_extract_pdf_text_stops_before_references(monkeypatch):
     import pdf_preprocessor
 
@@ -191,6 +272,27 @@ def test_extract_pdf_text_stops_before_references(monkeypatch):
     )
 
     assert extract_pdf_text(b"large") == "Introduction\nBody\n\nConclusion"
+
+
+def test_extract_pdf_text_skips_earlier_figure_labels(monkeypatch):
+    import pdf_preprocessor
+
+    pages = [
+        Mock(extract_text=lambda: "Pipeline\nReferences\nPrivacy screen"),
+        Mock(extract_text=lambda: "Table\nReferences\nConclusion\nReferences\n[1] A paper"),
+        Mock(extract_text=lambda: "[2] Another paper"),
+    ]
+    reader = Mock(pages=pages)
+    monkeypatch.setattr(pdf_preprocessor, "PdfReader", Mock(return_value=reader))
+    monkeypatch.setattr(
+        pdf_preprocessor,
+        "load_config",
+        lambda: {"pdf": {"max_bytes": 3, "stop_at_references": True}},
+    )
+
+    assert extract_pdf_text(b"large") == (
+        "Pipeline\nReferences\nPrivacy screen\n\nTable\nReferences\nConclusion"
+    )
 
 
 def test_extract_pdf_text_keeps_references_for_small_documents(monkeypatch):
@@ -245,7 +347,7 @@ def test_truncate_pdf_prefers_body_before_references(monkeypatch):
             self.pages = []
             FakeWriter.instances.append(self)
 
-        def add_page(self, page):
+        def add_page(self, page, excluded_keys=()):
             self.pages.append(page)
 
         def write(self, stream):
@@ -281,7 +383,7 @@ def test_truncate_pdf_main_text_only_keeps_pages_through_references(monkeypatch)
             self.pages = []
             FakeWriter.instances.append(self)
 
-        def add_page(self, page):
+        def add_page(self, page, excluded_keys=()):
             self.pages.append(page)
 
         def write(self, stream):
@@ -326,7 +428,7 @@ def test_truncate_pdf_drops_trailing_pages_until_under_limit(monkeypatch):
             self.pages = []
             FakeWriter.instances.append(self)
 
-        def add_page(self, page):
+        def add_page(self, page, excluded_keys=()):
             self.pages.append(page)
 
         def write(self, stream):

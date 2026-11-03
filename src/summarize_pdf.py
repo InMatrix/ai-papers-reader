@@ -23,6 +23,7 @@ from llm_client import (
     resolve_provider,
 )
 from pdf_preprocessor import (
+    cap_main_text_pages,
     download_pdf,
     extract_pdf_text,
     find_references_page,
@@ -132,12 +133,13 @@ def upload_file_with_retry(file_path, display_name, max_retries=5, initial_delay
     # If we exhausted all retries, raise the last exception
     raise last_exception
 
-def summarize_pdf(pdf_content, client=None, provider=None, model=None):
+def summarize_pdf(pdf_content, client=None, provider=None, model=None, excerpt=None):
     """
     Summarize the content of a PDF using the selected provider and model.
 
     Args:
     pdf_content (bytes): The content of the PDF file.
+    excerpt (str): Optional. What the PDF keeps of a longer paper, if it's an excerpt.
 
     Returns:
     str: A 500-word summary of the PDF content.
@@ -148,6 +150,13 @@ def summarize_pdf(pdf_content, client=None, provider=None, model=None):
 
     with open('prompts/summarize_paper.txt', 'r') as file:
         prompt = file.read().strip()
+
+    if excerpt:
+        prompt += (
+            f"\n\nThe attached paper is an excerpt of a longer one: only {excerpt} "
+            "are included. Write only about what these pages show, and do not guess "
+            "at what the left-out pages contain."
+        )
 
     if provider == "deepseek":
         paper_text = extract_pdf_text(pdf_content)
@@ -207,6 +216,21 @@ def summarize_pdf(pdf_content, client=None, provider=None, model=None):
     
     # Clean the response text of markdown code block markers
     return clean_markdown_blocks(response.text)
+
+def add_excerpt_note(summary, excerpt):
+    """
+    Adds a note below the summary's title saying that it covers only part of the paper.
+
+    Args:
+    summary (str): The summary, which starts with its title line.
+    excerpt (str): What the summarized PDF kept of the paper.
+
+    Returns:
+    str: The summary with the note added.
+    """
+    title, _, story = summary.partition('\n')
+    note = f"*This summary is based on an excerpt of a long paper: {excerpt}.*"
+    return f"{title}\n\n{note}\n\n{story.lstrip()}"
 
 def add_front_matter(summary, summary_path):
     """
@@ -279,15 +303,19 @@ def pdf_to_summary(pdf_url, summary_path, client=None, provider=None, model=None
     
     print(f">>> Downloading PDF from {pdf_url}...")
     pdf_content = download_pdf(pdf_url)
+    pdf_content, excerpt = cap_main_text_pages(pdf_content)
     
     print(">>> Generating summary...")
     summary = summarize_pdf(
-        pdf_content, client=client, provider=provider, model=model
+        pdf_content, client=client, provider=provider, model=model, excerpt=excerpt
     )
 
     if summary is None:
         print(f"Failed to generate summary for {pdf_url}")
         return None
+
+    if excerpt:
+        summary = add_excerpt_note(summary, excerpt)
 
     # Add front matter to the summary
     print(">>> Adding front matter...")
