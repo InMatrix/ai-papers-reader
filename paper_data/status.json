@@ -1452,15 +1452,17 @@
     "papers_summarized": {
       "https://arxiv.org/pdf/2610.22344": true,
       "https://arxiv.org/pdf/2610.18813": true,
-      "https://arxiv.org/pdf/2610.21910": true,
+      "https://arxiv.org/pdf/2610.21910": false,
       "https://arxiv.org/pdf/2610.22200": false,
       "https://arxiv.org/pdf/2610.19063": false,
       "https://arxiv.org/pdf/2610.21656": false,
       "https://arxiv.org/pdf/2610.21453": false,
-      "https://arxiv.org/pdf/2610.17670": true
+      "https://arxiv.org/pdf/2610.17670": true,
+      "https://arxiv.org/pdf/2610.17665": false,
+      "https://arxiv.org/pdf/2610.22350": false
     },
-    "final_report_generated": false,
-    "last_updated": "2026-10-16T16:14:55"
+    "final_report_generated": true,
+    "last_updated": "2026-11-03T06:43:49"
   },
   "paper_metadata_2026-10-23.txt": {
     "initial_report_generated": true,
@@ -1481,7 +1483,7 @@
   "paper_metadata_2026-10-30.txt": {
     "initial_report_generated": true,
     "papers_summarized": {
-      "https://arxiv.org/pdf/2610.35138": false,
+      "https://arxiv.org/pdf/2610.35138": true,
       "https://arxiv.org/pdf/2610.33106": true,
       "https://arxiv.org/pdf/2610.38174": true,
       "https://arxiv.org/pdf/2610.34298": true,
@@ -1491,9 +1493,10 @@
       "https://arxiv.org/pdf/2610.22507": true,
       "https://arxiv.org/pdf/2610.38678": false,
       "https://arxiv.org/pdf/2610.22990": true,
-      "https://arxiv.org/pdf/2610.30161": false
+      "https://arxiv.org/pdf/2610.30161": false,
+      "https://arxiv.org/pdf/2610.39664": false
     },
-    "final_report_generated": false,
-    "last_updated": "2026-10-30T17:50:28"
+    "final_report_generated": true,
+    "last_updated": "2026-11-03T06:46:33"
   }
 }
