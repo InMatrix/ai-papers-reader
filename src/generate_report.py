@@ -241,6 +241,8 @@ def generate_report(
 
     if not skip_summary:
         summary_save_location = os.path.join("docs", date_string)
+        kept_summaries = set()
+        dropped_papers = {}
 
         for topic in response_json:
             topic_description = next(
@@ -290,6 +292,7 @@ def generate_report(
                                 f"{summary_save_location}/", ""
                             )
                             paper["summary_content"] = summary_content
+                            kept_summaries.add(summary_path)
                             update_status(
                                 paper_data_path,
                                 {"papers_summarized": {paper["url"]: True}},
@@ -300,14 +303,7 @@ def generate_report(
                                 f"Dropped paper '{paper.get('title')}' from topic '{topic['topic']}' with relevance score: {relevance_score}"
                             )
                             topic["papers"].remove(paper)
-
-                            # Delete summary file
-                            if os.path.exists(summary_path):
-                                os.remove(summary_path)
-                            update_status(
-                                paper_data_path,
-                                {"papers_summarized": {paper["url"]: False}},
-                            )
+                            dropped_papers[paper["url"]] = summary_path
                     else:
                         print(f"Failed to generate summary for {paper.get('title')}")
                         failed_papers.append(paper.get("title"))
@@ -318,6 +314,15 @@ def generate_report(
 
                 # Save markdown after every paper processed
                 markdown_content = save_markdown(response_json)
+
+        # Topics that list the same paper share its summary file, so a dropped
+        # paper's file is deleted only if no topic kept the paper. Until then a
+        # later topic reuses the file instead of summarizing the paper again.
+        for url, summary_path in dropped_papers.items():
+            if summary_path not in kept_summaries:
+                if os.path.exists(summary_path):
+                    os.remove(summary_path)
+                update_status(paper_data_path, {"papers_summarized": {url: False}})
 
     if failed_papers:
         # The report is saved without these papers' summaries, and is left

@@ -207,6 +207,92 @@ def test_generate_report_fails_when_topic_description_is_missing(tmp_path):
 
     assert report_path.exists()
 
+shared_paper = {
+    "title": "Shared Paper",
+    "relevance": "High",
+    "url": "https://arxiv.org/pdf/2310.00001"
+}
+
+listed_under_both_topics = [
+    {"topic": "Topic 1", "papers": [shared_paper]},
+    {"topic": "Topic 2", "papers": [shared_paper]}
+]
+
+def run_report_on_real_files(tmp_path, monkeypatch, recommendations, relevance_scores):
+    # Only the LLM and the PDF download are faked, so the summary files, the
+    # report, and status.json are the real ones. Returns the summarizer's mock.
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "paper_data").mkdir()
+
+    mock_client = Mock()
+    mock_client.models.generate_content.return_value = MockModelResponse(json.dumps(recommendations))
+    topics = [{"topic": item["topic"], "description": item["topic"]} for item in recommendations]
+
+    with patch('generate_report.summarize_pdf.download_pdf', return_value=b"pdf"), \
+         patch('generate_report.summarize_pdf.summarize_pdf', return_value="# Title\nSummary") as mock_summarize_pdf, \
+         patch('generate_report.is_relevant', side_effect=relevance_scores):
+        generate_report(
+            mock_client,
+            "dummy prompt",
+            topics,
+            "paper_data/paper_metadata_2023-10-27.txt",
+            "2023-10-27",
+            "docs/2023-10-27/index.md"
+        )
+
+    return mock_summarize_pdf
+
+def report_section(tmp_path, topic):
+    report = (tmp_path / "docs" / "2023-10-27" / "index.md").read_text()
+    return report.split(f"\n## {topic}\n")[1].split("\n## ")[0]
+
+def papers_summarized(tmp_path):
+    status = json.loads((tmp_path / "paper_data" / "status.json").read_text())
+    return status["paper_metadata_2023-10-27.txt"]["papers_summarized"]
+
+@pytest.mark.parametrize(
+    "relevance_scores, kept_topic, dropped_topic",
+    [
+        ([0.9, 0.1], "Topic 1", "Topic 2"),
+        ([0.1, 0.9], "Topic 2", "Topic 1")
+    ],
+    ids=["keep_then_drop", "drop_then_keep"]
+)
+def test_generate_report_keeps_summary_shared_with_a_topic_that_kept_the_paper(
+    tmp_path, monkeypatch, relevance_scores, kept_topic, dropped_topic
+):
+    mock_summarize_pdf = run_report_on_real_files(tmp_path, monkeypatch, listed_under_both_topics, relevance_scores)
+
+    # The link under the topic that kept the paper points at a file that exists
+    assert "[Summary](2310.00001/)" in report_section(tmp_path, kept_topic)
+    assert (tmp_path / "docs" / "2023-10-27" / "2310.00001.md").exists()
+    # The paper is still dropped from the other topic
+    assert "Shared Paper" not in report_section(tmp_path, dropped_topic)
+    assert papers_summarized(tmp_path) == {shared_paper["url"]: True}
+    # The second topic reuses the summary instead of generating it again
+    mock_summarize_pdf.assert_called_once()
+
+def test_generate_report_deletes_summary_when_every_topic_dropped_the_paper(tmp_path, monkeypatch):
+    mock_summarize_pdf = run_report_on_real_files(tmp_path, monkeypatch, listed_under_both_topics, [0.1, 0.2])
+
+    assert not (tmp_path / "docs" / "2023-10-27" / "2310.00001.md").exists()
+    assert papers_summarized(tmp_path) == {shared_paper["url"]: False}
+    mock_summarize_pdf.assert_called_once()
+
+def test_generate_report_deletes_dropped_summary_on_a_run_with_failures(tmp_path, monkeypatch):
+    failing_paper = {
+        "title": "Failing Paper",
+        "relevance": "High",
+        "url": "https://arxiv.org/pdf/2310.00002"
+    }
+    recommendations = [{"topic": "Topic 1", "papers": [shared_paper, failing_paper]}]
+
+    with pytest.raises(RuntimeError, match=r"Could not summarize 1 paper\(s\): Failing Paper"):
+        run_report_on_real_files(tmp_path, monkeypatch, recommendations, [0.1, Exception("Quota exceeded")])
+
+    assert not (tmp_path / "docs" / "2023-10-27" / "2310.00001.md").exists()
+    assert papers_summarized(tmp_path) == {shared_paper["url"]: False}
+
 def test_report_api_spend_prints_and_writes_job_summary(tmp_path, monkeypatch, capsys):
     summary_path = tmp_path / "step_summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_path))
