@@ -1512,5 +1512,21 @@
     },
     "final_report_generated": true,
     "last_updated": "2026-11-06T18:59:54"
+  },
+  "paper_metadata_2026-11-13.txt": {
+    "initial_report_generated": true,
+    "papers_summarized": {
+      "https://arxiv.org/pdf/2611.08286": true,
+      "https://arxiv.org/pdf/2611.08318": false,
+      "https://arxiv.org/pdf/2611.13758": false,
+      "https://arxiv.org/pdf/2611.16009": false,
+      "https://arxiv.org/pdf/2608.22237": false,
+      "https://arxiv.org/pdf/2611.16748": false,
+      "https://arxiv.org/pdf/2607.24999": false,
+      "https://arxiv.org/pdf/2611.11306": false,
+      "https://arxiv.org/pdf/2611.15131": false
+    },
+    "final_report_generated": true,
+    "last_updated": "2026-11-13T19:19:36"
   }
 }
